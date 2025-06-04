@@ -1,0 +1,33 @@
+{
+  "ERROR_TOKEN_UNAUTHORISED": "Not authorised to get access token",
+  "ERROR_TOKEN_FORBIDDEN": "Forbidden to get access token",
+
+  "ERROR_CLAIM_NOT_FOUND": "Claim not found",
+
+  "ERROR_ORG_REQUIRED": "Organisation is required",
+  "ERROR_ORG_NOT_FOUND": "Organisation not found",
+
+  "ERROR_USER_NOT_FOUND": "User not found",
+  "ERROR_USER_SELF_DELETION": "Unable to remove self",
+
+  "ERROR_EMAIL_REQUIRED": "Email is required",
+  "ERROR_EMAIL_NOT_FOUND": "Email not found",
+  "ERROR_EMAIL_INVALID_FORMAT": "Invalid email format",
+  "ERROR_EMAIL_ALREADY_EXISTS": "Email already exists",
+
+  "ERROR_ID_REQUIRED": "ID is required",
+  "ERROR_ID_NOT_FOUND": "ID not found",
+
+  "ERROR_SERVICE_NOT_FOUND": "Service not found",
+
+  "ERROR_NAME_REQUIRED": "Name is required",
+  "ERROR_NAME_NOT_FOUND": "Name not found",
+
+  "ERROR_ACCESS_ORG_ADMIN_REQUIRED": "Organisation access is required",
+
+  "ERROR_INTERNAL_SERVER": "Internal server error",
+
+  "SUCCESS_USER_CREATED": "User created successfully",
+  "SUCCESS_USER_UPDATED": "User updated successfully",
+  "SUCCESS_USER_DELETED": "User deleted successfully"
+}

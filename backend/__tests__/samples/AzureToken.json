@@ -1,0 +1,15 @@
+{
+  "provider_name": "aad",
+  "user_claims": [
+    {
+      "typ": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+      "val": "test.admin@example.com"
+    },
+    { "typ": "name", "val": "Test Admin" },
+    {
+      "typ": "http://schemas.microsoft.com/identity/claims/tenantid",
+      "val": "test-org-id"
+    }
+  ],
+  "user_id": "test.admin@example.com"
+}

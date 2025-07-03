@@ -8,11 +8,7 @@ const LoadingSpinner = () => {
   const theme = useTheme();
   const [showSpinner, setShowSpinner] = useState(false); // Control visibility
 
-  useEffect(() => {
-    const timer = setTimeout(() => setShowSpinner(true), 500); // Delay by 500ms
-    return () => clearTimeout(timer); // Cleanup timer when unmounting
-  }, []);
-
+ 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
       <Sidebar />

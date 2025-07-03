@@ -19,6 +19,7 @@ const createUser = async (email: string, name: string, roles: string[]) => {
     return res.data.user;
   } catch (error) {
     console.error("Invite failed:", error);
+    throw error;
   }
 };
 
@@ -26,14 +27,17 @@ const deleteUser = async (id: string) => {
   try {
     const res = await axios.delete(`/api/user/${id}`);
     console.log("User deleted:", res.data);
+    return res.data;
   } catch (error) {
-    console.error(error);
+    console.error("Delete failed:", error);
+    throw error;
   }
 };
 
 const updateUserById = async (userId: string, updateData: User) => {
   try {
-    const response = await axios.put(`/api/users/${userId}`, updateData);
+    // Use the correct endpoint - /api/user/:id (not /api/users/:id)
+    const response = await axios.put(`/api/user/${userId}`, updateData);
     return {
       success: true,
       user: response.data.user,
@@ -41,6 +45,21 @@ const updateUserById = async (userId: string, updateData: User) => {
     };
   } catch (error) {
     console.error("Error updating user:", error);
+    
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data?.message?.description || "Update failed";
+      return {
+        success: false,
+        error: errorMessage,
+        message: errorMessage,
+      };
+    }
+    
+    return {
+      success: false,
+      error: "Network error",
+      message: "Network error occurred",
+    };
   }
 };
 

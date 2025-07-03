@@ -54,13 +54,21 @@ const Sidebar: React.FC = () => {
         { icon: <SettingsIcon />, label: "Settings", path: "/settings" },
       ],
     },
-    ...(hasRole("organisation-admin") ? [{
-      title: "Management",
-      items: [
-        { icon: <UsersIcon />, label: "Users", path: "/users" },
-        { icon: <OrgIcon />, label: "Organization", path: "/organization" },
-      ],
-    }] : []), // ✅ Conditionally spread the management section
+    ...(hasRole("organisation-admin")
+      ? [
+          {
+            title: "Management",
+            items: [
+              { icon: <UsersIcon />, label: "Users", path: "/users" },
+              {
+                icon: <OrgIcon />,
+                label: "Organization",
+                path: "/organization",
+              },
+            ],
+          },
+        ]
+      : []), // ✅ Conditionally spread the management section
   ];
 
   return (
@@ -113,11 +121,7 @@ const Sidebar: React.FC = () => {
               <ListItem disablePadding key={item.label}>
                 <ListItemButton
                   onClick={() => {
-                    if (item.label === "Analyze") {
-                      window.open("http://localhost:5173/", "_blank");
-                    } else {
-                      navigate(item.path);
-                    }
+                    navigate(item.path);
                   }}
                   sx={{ justifyContent: open ? "initial" : "center", px: 2 }}
                 >

@@ -9,6 +9,8 @@ import { UserManagementPage } from "./pages/UserManagementPage/UserManagementPag
 
 import ProtectedRoute from "./components/ProtectedRoute.tsx"; // ✅ Import ProtectedRoute
 import Layout from "./components/Layout.tsx";
+import AnalyzeHomePage from "./pages/AnalyzeHomePage/AnalyzeHomePage.tsx";
+import { AnalysisProvider } from "./providers/AnalysisProvider.tsx";
 
 const App: React.FC = () => {
   //update
@@ -27,6 +29,18 @@ const App: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <NewDashboardPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analyze"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AnalysisProvider>
+                  <AnalyzeHomePage />
+                </AnalysisProvider>
               </Layout>
             </ProtectedRoute>
           }

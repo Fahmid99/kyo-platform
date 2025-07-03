@@ -1,15 +1,69 @@
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 
+// Define headers for each route - these render immediately
+const pageConfigs = {
+  '/dashboard': {
+    title: 'Dashboard',
+    description: 'Welcome to your dashboard overview'
+  },
+  '/users': {
+    title: 'User management', 
+    description: 'Manage your team members and their account permissions here.'
+  },
+  '/analyze': {
+    title: 'Document Analysis Centre',
+    description: 'Upload your documents to preconfigured zones or use general upload with custom models.'
+  },
+  '/activity': {
+    title: 'Activity',
+    description: 'View your recent activity and usage statistics.'
+  },
+  '/billing': {
+    title: 'Billing',
+    description: 'Manage your subscription and billing information.'
+  },
+  '/settings': {
+    title: 'Settings',
+    description: 'Configure your account and application preferences.'
+  }
+} as const;
+
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const location = useLocation(); // Fixed: Added parentheses to call the hook
-  const isAuthPage = ["/login", "/error"].includes(location.pathname);
+  const location = useLocation();
+  const isAuthPage = ["/login", "/error", "/unauthorised"].includes(location.pathname);
+  const currentPageConfig = pageConfigs[location.pathname as keyof typeof pageConfigs];
   
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{ 
+      display: "flex", 
+      minHeight: "100vh",
+      backgroundColor: "#f9fafb"
+    }}>
       {!isAuthPage && <Sidebar />}
-      <Box sx={{ flexGrow: 1 }}>{children}</Box>
+      <Box sx={{ 
+        flexGrow: 1,
+        backgroundColor: "#f9fafb",
+        minHeight: "100vh"
+      }}>
+        {/* Header renders immediately - no waiting for page component */}
+        {!isAuthPage && currentPageConfig && (
+          <Box sx={{ p: 3, pb: 0 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: "#111827", mb: 1 }}>
+              {currentPageConfig.title}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
+              {currentPageConfig.description}
+            </Typography>
+          </Box>
+        )}
+        
+        {/* Page content loads here */}
+        <Box sx={{ px: 3 }}>
+          {children}
+        </Box>
+      </Box>
     </Box>
   );
 };

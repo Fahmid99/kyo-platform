@@ -12,7 +12,15 @@ const documentRoutes = require("./routes/document.js"); // Add this line
 
 const app = express();
 app.use(middleware.handle(i18next));
-app.use(express.json());
+app.use(express.json({ 
+  limit: '50mb',  // Increase JSON payload limit to 50MB
+  extended: true
+}));
+
+app.use(express.urlencoded({ 
+  limit: '50mb',  // Also increase URL-encoded payload limit
+  extended: true 
+}));
 
 // Existing routes
 app.use("/api/auth", authRoutes);

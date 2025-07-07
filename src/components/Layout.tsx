@@ -16,6 +16,10 @@ const pageConfigs = {
     title: 'Document Analysis Centre',
     description: 'Upload your documents to preconfigured zones or use general upload with custom models.'
   },
+  '/analyze/results': {
+    title: 'Analysis Results',
+    description: 'View and download your document analysis results.'
+  },
   '/activity': {
     title: 'Activity',
     description: 'View your recent activity and usage statistics.'
@@ -35,6 +39,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthPage = ["/login", "/error", "/unauthorised"].includes(location.pathname);
   const currentPageConfig = pageConfigs[location.pathname as keyof typeof pageConfigs];
   
+  // For results page, we'll let the component handle its own header
+  const showDefaultHeader = !isAuthPage && currentPageConfig && location.pathname !== '/analyze/results';
+  
   return (
     <Box sx={{ 
       display: "flex", 
@@ -47,8 +54,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         backgroundColor: "#f9fafb",
         minHeight: "100vh"
       }}>
-        {/* Header renders immediately - no waiting for page component */}
-        {!isAuthPage && currentPageConfig && (
+        {/* Header renders immediately for most pages - results page handles its own */}
+        {showDefaultHeader && (
           <Box sx={{ p: 3, pb: 0 }}>
             <Typography variant="h4" sx={{ fontWeight: 700, color: "#111827", mb: 1 }}>
               {currentPageConfig.title}
@@ -60,7 +67,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         )}
         
         {/* Page content loads here */}
-        <Box sx={{ px: 3 }}>
+        <Box sx={{ px: location.pathname === '/analyze/results' ? 0 : 3 }}>
           {children}
         </Box>
       </Box>

@@ -1,57 +1,45 @@
-// src/services/documentService.ts
 import axios from "axios";
 
-// Define types for the document analysis
 export interface DocumentAnalysisResult {
-  title: string;
-  keyValuePairs: Array<{
-    key: string;
-    value: string;
-    confidence: number;
-    valueBoundingRegions: unknown[];
-    keyBoundingRegions: unknown[];
-    color: string;
-    pageNumber: number;
-  }>;
-  pageWidth: number;
-  pageHeight: number;
-  pages: unknown[];
-  paragraphs: unknown[];
-  words: unknown[];
-  documents: Array<{
-    docType: string;
-    confidence: number;
-    boundingRegions: unknown[];
-    fields: Array<{
-      key: string;
-      kind: string;
-      value: unknown;
-      confidence: number;
-      boundingRegions: unknown[];
-      color: string;
-      pageNumber: number;
-    }>;
-  }>;
-  raw: {
-    keyValuePairs: unknown[];
-    documents: unknown[];
-  };
-}
-
-export interface DocumentAnalysisResponse {
   success: boolean;
-  data: DocumentAnalysisResult;
-  metadata: {
-    fileName: string;
-    fileSize: number;
-    mimeType: string;
-    scanType: string;
-    processedAt: string;
+  data?: {
+    title: string;
+    keyValuePairs: Array<{
+      key: string;
+      value: string;
+      confidence: number;
+      pageNumber: number;
+      color: string;
+      valueBoundingRegions?: any[];
+      keyBoundingRegions?: any[];
+    }>;
+    documents: Array<{
+      docType: string;
+      confidence: number;
+      boundingRegions: any[];
+      fields: Array<{
+        key: string;
+        kind: string;
+        value: any;
+        confidence: number;
+        boundingRegions: any[];
+        color: string;
+        pageNumber: number;
+      }>;
+    }>;
+    pages: any[];
+    paragraphs: any[];
+    words: any[];
+    pageWidth: number;
+    pageHeight: number;
+    documentsInitial?: any;
+    keyValuePairsInitial?: any;
   };
-  message: {
+  message?: {
     key: string;
     description: string;
   };
+  error?: string;
 }
 
 export interface ScanType {
@@ -60,99 +48,213 @@ export interface ScanType {
   description: string;
 }
 
-const analyzeDocument = async (
-  base64String: string, 
-  scanType: string
-): Promise<DocumentAnalysisResponse> => {
-  try {
-    const requestData = {
-      base64String: base64String,
-      scanType: scanType,
-    };
+export interface ServiceHealthResponse {
+  status: string;
+  service: string;
+  timestamp: string;
+  version: string;
+}
 
-    console.log(`Starting document analysis:`, {
-      scanType: scanType,
-      base64Length: base64String.length,
-    });
+class DocumentService {
+  private baseURL = "/api/document";
 
-    const response = await axios.post("/api/document/analyze", requestData, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+  /**
+   * Analyze a document using Azure Document Intelligence
+   */
+  async analyzeDocument(
+    base64Data: string, 
+    scanType: string
+  ): Promise<DocumentAnalysisResult> {
+    try {
+      console.log("🔍 Starting document analysis...", { 
+        scanType, 
+        base64Length: base64Data.length 
+      });
+      
+      // The backend expects 'base64String' and 'scanType' in the request body
+      const requestData = {
+        base64String: base64Data,  // Changed from base64Data to base64String
+        scanType: scanType,
+      };
 
-    console.log("Document analysis completed:", response.data);
-    return response.data;
+      console.log("📤 Sending request with:", {
+        scanType: requestData.scanType,
+        base64Length: requestData.base64String.length,
+        requestKeys: Object.keys(requestData)
+      });
 
-  } catch (error) {
-    console.error("Document analysis failed:", error);
-    
-    if (axios.isAxiosError(error)) {
-      const errorMessage = error.response?.data?.message?.description || "Analysis failed";
-      throw new Error(errorMessage);
-    }
-    
-    throw new Error("Network error occurred");
-  }
-};
+      const response = await axios.post<DocumentAnalysisResult>(
+        `${this.baseURL}/analyze`,
+        requestData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 120000, // 2 minute timeout for analysis
+        }
+      );
 
-const getScanTypes = async (): Promise<ScanType[]> => {
-  try {
-    const response = await axios.get("/api/document/scan-types");
-    console.log("Available scan types:", response.data.scanTypes);
-    return response.data.scanTypes;
-  } catch (error) {
-    console.error("Failed to get scan types:", error);
-    
-    // Return default scan types if API fails
-    return [
-      {
-        value: 'prebuilt-invoice',
-        label: 'Invoice',
-        description: 'Extract data from invoices'
-      },
-      {
-        value: 'prebuilt-receipt',
-        label: 'Receipt',
-        description: 'Extract data from receipts'
-      },
-      {
-        value: 'prebuilt-businessCard',
-        label: 'Business Card',
-        description: 'Extract contact information from business cards'
-      },
-      {
-        value: 'prebuilt-idDocument',
-        label: 'ID Document',
-        description: 'Extract data from identity documents'
-      },
-      {
-        value: 'prebuilt-layout',
-        label: 'Layout Analysis',
-        description: 'Analyze document layout and structure'
-      },
-      {
-        value: 'prebuilt-document',
-        label: 'General Document',
-        description: 'General document analysis'
+      console.log("✅ Document analysis completed successfully:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Document analysis failed:", error);
+      
+      if (error.response?.data) {
+        // Return the error response from the backend
+        return {
+          success: false,
+          message: error.response.data.message,
+          error: error.response.data.error
+        };
       }
+      
+      // Handle network/timeout errors
+      if (error.code === 'ECONNABORTED') {
+        return {
+          success: false,
+          message: {
+            key: "ERROR_TIMEOUT",
+            description: "The analysis request timed out. Please try again with a smaller file or contact support."
+          }
+        };
+      }
+      
+      return {
+        success: false,
+        message: {
+          key: "ERROR_NETWORK",
+          description: "A network error occurred. Please check your connection and try again."
+        },
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Get available Azure Document Intelligence scan types
+   */
+  async getScanTypes(): Promise<ScanType[]> {
+    try {
+      const response = await axios.get<{ scanTypes: ScanType[] }>(`${this.baseURL}/scan-types`);
+      return response.data.scanTypes;
+    } catch (error) {
+      console.error("Failed to fetch scan types:", error);
+      // Return default scan types as fallback
+      return [
+        {
+          value: 'prebuilt-invoice',
+          label: 'Invoice',
+          description: 'Extract data from invoices'
+        },
+        {
+          value: 'prebuilt-receipt',
+          label: 'Receipt',
+          description: 'Extract data from receipts'
+        },
+        {
+          value: 'prebuilt-businessCard',
+          label: 'Business Card',
+          description: 'Extract contact information from business cards'
+        },
+        {
+          value: 'prebuilt-idDocument',
+          label: 'ID Document',
+          description: 'Extract data from identity documents'
+        },
+        {
+          value: 'prebuilt-layout',
+          label: 'Layout Analysis',
+          description: 'Analyze document layout and structure'
+        },
+        {
+          value: 'prebuilt-document',
+          label: 'General Document',
+          description: 'General document analysis'
+        }
+      ];
+    }
+  }
+
+  /**
+   * Check if the document service is healthy
+   */
+  async checkServiceHealth(): Promise<boolean> {
+    try {
+      const response = await axios.get<ServiceHealthResponse>(`${this.baseURL}/health`);
+      console.log("Document service health:", response.data);
+      return response.data.status === 'OK';
+    } catch (error) {
+      console.error("Document service health check failed:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Validate if a scan type is supported
+   */
+  isValidScanType(scanType: string): boolean {
+    const validScanTypes = [
+      'prebuilt-invoice',
+      'prebuilt-receipt',
+      'prebuilt-businessCard',
+      'prebuilt-idDocument',
+      'prebuilt-layout',
+      'prebuilt-document'
     ];
+    return validScanTypes.includes(scanType);
   }
-};
 
-const checkServiceHealth = async (): Promise<boolean> => {
-  try {
-    const response = await axios.get("/api/document/health");
-    console.log("Document service health:", response.data);
-    return response.data.status === 'OK';
-  } catch (error) {
-    console.error("Document service health check failed:", error);
-    return false;
+  /**
+   * Convert file to base64 string
+   */
+  convertFileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        if (reader.result) {
+          const base64String = (reader.result as string).split(',')[1];
+          resolve(base64String);
+        } else {
+          reject(new Error('Failed to convert file to base64'));
+        }
+      };
+      reader.onerror = (error) => reject(error);
+    });
   }
-};
 
-export default {
-  analyzeDocument,
-  getScanTypes,
-  checkServiceHealth,
-};
+  /**
+   * Validate file before analysis
+   */
+  validateFile(file: File): { isValid: boolean; error?: string } {
+    const maxSizeInMB = 50;
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'image/bmp',
+      'image/tiff'
+    ];
+
+    if (file.size > maxSizeInMB * 1024 * 1024) {
+      return {
+        isValid: false,
+        error: `File size must be less than ${maxSizeInMB}MB`
+      };
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        isValid: false,
+        error: 'File type not supported. Please use PDF, JPEG, PNG, BMP, or TIFF files.'
+      };
+    }
+
+    return { isValid: true };
+  }
+}
+
+const documentService = new DocumentService();
+
+export default documentService;

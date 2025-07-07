@@ -33,6 +33,10 @@ export const AnalysisProvider = ({ children }: AnalysisProviderProps) => {
       dispatch({ type: "SET_PROCESSING", payload: processing });
     }, []),
 
+    setLoading: useCallback((loading: boolean) => {
+      dispatch({ type: "SET_PROCESSING", payload: loading });
+    }, []),
+
     setError: useCallback((error: string | null) => {
       dispatch({ type: "SET_ERROR", payload: error });
     }, []),
@@ -41,7 +45,11 @@ export const AnalysisProvider = ({ children }: AnalysisProviderProps) => {
       dispatch({ type: "SET_RESULTS", payload: results });
     }, []),
 
-    cleatAnalysis: useCallback(() => {
+    setAnalysisResult: useCallback((data: any) => {
+      dispatch({ type: "SET_RESULTS", payload: data });
+    }, []),
+
+    clearAnalysis: useCallback(() => {
       dispatch({ type: "CLEAR_ANALYSIS" });
     }, []),
   };

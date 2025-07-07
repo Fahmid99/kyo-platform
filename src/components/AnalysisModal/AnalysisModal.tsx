@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -19,25 +19,69 @@ import {
   Alert,
   Chip,
   CircularProgress,
+  Card,
+  CardContent,
 } from "@mui/material";
-import { Close, Analytics } from "@mui/icons-material";
+import { Close, Analytics, Description, Receipt, Business, Assignment, Layout, DocumentScanner } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import { useAnalysis } from "../../hooks/useAnalysis";
-import { AnalysisModalProps, Connector, Model, AnalysisFormData } from "./types";
+import documentService from "../../services/documentService";
+import { DocumentFile } from "../FileUpload/types";
 
-// Mock data - replace with actual data from your API
-const mockConnectors: Connector[] = [
-  { id: "1", name: "Azure Blob Storage", location: "eastus", type: "sharepoint" },
-  { id: "2", name: "Local Storage", location: "local", type: "local" },
-  { id: "3", name: "KCIM Connector", location: "global", type: "kcim" },
+interface AnalysisModalProps {
+  open: boolean;
+  onClose: () => void;
+  file: DocumentFile | null;
+  onAnalysisComplete?: (results: any) => void;
+}
+
+interface AzureModel {
+  value: string;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+}
+
+const azureModels: AzureModel[] = [
+  {
+    value: 'prebuilt-invoice',
+    label: 'Invoice',
+    description: 'Extract data from invoices',
+    icon: <Receipt />
+  },
+  {
+    value: 'prebuilt-receipt',
+    label: 'Receipt',
+    description: 'Extract data from receipts',
+    icon: <Receipt />
+  },
+  {
+    value: 'prebuilt-businessCard',
+    label: 'Business Card',
+    description: 'Extract contact information from business cards',
+    icon: <Business />
+  },
+  {
+    value: 'prebuilt-idDocument',
+    label: 'ID Document',
+    description: 'Extract data from identity documents',
+    icon: <Assignment />
+  },
+  {
+    value: 'prebuilt-layout',
+    label: 'Layout Analysis',
+    description: 'Analyze document layout and structure',
+    icon: <Business />
+  },
+  {
+    value: 'prebuilt-document',
+    label: 'General Document',
+    description: 'General document analysis',
+    icon: <DocumentScanner />
+  }
 ];
 
-const mockModels: Model[] = [
-  { id: "1", name: "GPT-4", provider: "OpenAI", capabilities: ["text", "analysis"] },
-  { id: "2", name: "Claude-3", provider: "Anthropic", capabilities: ["text", "analysis", "reasoning"] },
-  { id: "3", name: "Gemini Pro", provider: "Google", capabilities: ["text", "multimodal"] },
-];
-
-const steps = ["Select Connector", "Choose Model", "Analyze Document"];
+const steps = ["Select Analysis Type", "Review & Analyze"];
 
 const AnalysisModal: React.FC<AnalysisModalProps> = ({
   open,
@@ -46,14 +90,21 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
   onAnalysisComplete,
 }) => {
   const [activeStep, setActiveStep] = useState(0);
-  const [formData, setFormData] = useState<AnalysisFormData>({
-    connector: null,
-    model: null,
-  });
+  const [selectedModel, setSelectedModel] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { actions } = useAnalysis();
 
-  const { state, actions } = useAnalysis();
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      setActiveStep(0);
+      setSelectedModel("");
+      setError(null);
+      setIsAnalyzing(false);
+    }
+  }, [open]);
 
   const handleNext = () => {
     if (activeStep === steps.length - 1) {
@@ -69,301 +120,287 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
 
   const handleClose = () => {
     setActiveStep(0);
-    setFormData({ connector: null, model: null });
+    setSelectedModel("");
     setIsAnalyzing(false);
-    setAnalysisComplete(false);
+    setError(null);
     onClose();
   };
 
   const handleSubmitAnalysis = async () => {
-    if (!formData.connector || !formData.model || !file) return;
+    // Validation checks
+    if (!file) {
+      setError("No file selected for analysis");
+      return;
+    }
+
+    if (!selectedModel) {
+      setError("Please select an analysis model");
+      return;
+    }
+
+    if (!file.base64) {
+      setError("File data is not available. Please re-upload the file.");
+      return;
+    }
 
     setIsAnalyzing(true);
-    actions.setProcessing(true);
-
-    // Update analysis context with connector and model
-    actions.setConnector(
-      formData.connector.name,
-      formData.connector.location,
-      formData.connector.id
-    );
-    actions.setModel(formData.model.id);
+    setError(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      
-      // Mock successful analysis
-      actions.setResults({
-        analysisId: `analysis-${Date.now()}`,
-        status: "completed",
-        extractedData: {
-          text: "Sample extracted text...",
-          metadata: {
-            pages: 5,
-            words: 1200,
-            confidence: 0.95,
-          },
-        },
-        timestamp: new Date().toISOString(),
+      console.log("🔍 Starting analysis with:", {
+        fileName: file.name,
+        model: selectedModel,
+        hasBase64: !!file.base64,
+        base64Length: file.base64?.length || 0,
+        base64Preview: file.base64?.substring(0, 50) + "..."
       });
 
-      setAnalysisComplete(true);
-      actions.setProcessing(false);
-      
-      // Show completion alert
-      setTimeout(() => {
-        alert("Analysis Complete! 🎉");
-        onAnalysisComplete?.();
-        handleClose();
-      }, 1000);
+      // Store file info and base64 in context
+      actions.setBase64(file.base64);
+      actions.setDocumentData({
+        id: file.id,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
+      actions.setModel(selectedModel);
+      actions.setProcessing(true);
 
-    } catch (error) {
-      actions.setError("Analysis failed. Please try again." + error);
+      // Call the analysis API using the base64 data that's already available
+      console.log("📤 Calling documentService.analyzeDocument with:", {
+        scanType: selectedModel,
+        base64Length: file.base64.length
+      });
+      
+      const analysisResult = await documentService.analyzeDocument(file.base64, selectedModel);
+      
+      console.log("✅ Analysis result:", analysisResult);
+      
+      if (analysisResult.success && analysisResult.data) {
+        // Store results in context
+        actions.setResults(analysisResult.data);
+        actions.setProcessing(false);
+        
+        // Close modal and navigate to results page
+        handleClose();
+        navigate('/analyze/results', { 
+          state: { 
+            analysisData: analysisResult.data,
+            fileName: file.name,
+            model: selectedModel 
+          } 
+        });
+        
+        // Call completion callback if provided
+        if (onAnalysisComplete) {
+          onAnalysisComplete(analysisResult.data);
+        }
+      } else {
+        // Handle API errors
+        const errorMessage = analysisResult.message?.description || "Analysis failed - no data returned";
+        throw new Error(errorMessage);
+      }
+    } catch (err) {
+      console.error("❌ Analysis error:", err);
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during analysis";
+      setError(errorMessage);
       actions.setProcessing(false);
+      actions.setError?.(errorMessage);
+    } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const isStepComplete = (step: number) => {
-    switch (step) {
-      case 0:
-        return formData.connector !== null;
-      case 1:
-        return formData.model !== null;
-      case 2:
-        return analysisComplete;
-      default:
-        return false;
-    }
-  };
-
-  const canProceed = () => {
-    switch (activeStep) {
-      case 0:
-        return formData.connector !== null;
-      case 1:
-        return formData.model !== null;
-      case 2:
-        return true;
-      default:
-        return false;
-    }
-  };
-
-  const renderStepContent = (step: number) => {
+  const getStepContent = (step: number) => {
     switch (step) {
       case 0:
         return (
-          <Box sx={{ minHeight: 200 }}>
+          <Box sx={{ minHeight: 300 }}>
             <Typography variant="h6" gutterBottom>
-              Select a Connector
+              Select Azure Document Intelligence Model
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Choose where to process your document
+              Choose the appropriate prebuilt model for your document type
             </Typography>
             
-            <FormControl fullWidth>
-              <InputLabel>Connector</InputLabel>
-              <Select
-                value={formData.connector?.id || ""}
-                onChange={(e) => {
-                  const connector = mockConnectors.find(c => c.id === e.target.value);
-                  setFormData(prev => ({ ...prev, connector: connector || null }));
-                }}
-                label="Connector"
-              >
-                {mockConnectors.map((connector) => (
-                  <MenuItem key={connector.id} value={connector.id}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography>{connector.name}</Typography>
-                      <Chip 
-                        label={connector.type.toUpperCase()} 
-                        size="small" 
-                        variant="outlined" 
-                      />
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {formData.connector && (
-              <Paper sx={{ mt: 2, p: 2, bgcolor: "success.50" }}>
-                <Typography variant="body2">
-                  <strong>Selected:</strong> {formData.connector.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Location: {formData.connector.location}
-                </Typography>
-              </Paper>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
             )}
+
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+              {azureModels.map((model) => (
+                <Card 
+                  key={model.value}
+                  sx={{ 
+                    cursor: 'pointer',
+                    border: selectedModel === model.value ? 2 : 1,
+                    borderColor: selectedModel === model.value ? 'primary.main' : 'divider',
+                    '&:hover': { borderColor: 'primary.main' }
+                  }}
+                  onClick={() => setSelectedModel(model.value)}
+                >
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                      {model.icon}
+                      <Typography variant="h6">{model.label}</Typography>
+                      {selectedModel === model.value && (
+                        <Chip label="Selected" color="primary" size="small" />
+                      )}
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {model.description}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
           </Box>
         );
 
       case 1:
+        const selectedModelInfo = azureModels.find(m => m.value === selectedModel);
         return (
           <Box sx={{ minHeight: 200 }}>
             <Typography variant="h6" gutterBottom>
-              Choose Analysis Model
+              Review Analysis Settings
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Select the AI model for document analysis
+              Confirm your settings before starting the analysis
             </Typography>
-            
-            <FormControl fullWidth>
-              <InputLabel>Model</InputLabel>
-              <Select
-                value={formData.model?.id || ""}
-                onChange={(e) => {
-                  const model = mockModels.find(m => m.id === e.target.value);
-                  setFormData(prev => ({ ...prev, model: model || null }));
-                }}
-                label="Model"
-              >
-                {mockModels.map((model) => (
-                  <MenuItem key={model.id} value={model.id}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography>{model.name}</Typography>
-                      <Chip 
-                        label={model.provider} 
-                        size="small" 
-                        variant="outlined" 
-                      />
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
 
-            {formData.model && (
-              <Paper sx={{ mt: 2, p: 2, bgcolor: "success.50" }}>
-                <Typography variant="body2">
-                  <strong>Selected:</strong> {formData.model.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Provider: {formData.model.provider}
-                </Typography>
-                <Box sx={{ mt: 1 }}>
-                  {formData.model.capabilities.map((capability) => (
-                    <Chip
-                      key={capability}
-                      label={capability}
-                      size="small"
-                      sx={{ mr: 0.5, mt: 0.5 }}
-                    />
-                  ))}
+            <Paper sx={{ p: 3, bgcolor: 'background.paper' }}>
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                Analysis Configuration
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">File:</Typography>
+                  <Typography variant="body1">{file?.name || 'No file selected'}</Typography>
                 </Box>
-              </Paper>
-            )}
-          </Box>
-        );
-
-      case 2:
-        return (
-          <Box sx={{ minHeight: 200, textAlign: "center" }}>
-            {!isAnalyzing && !analysisComplete && (
-              <>
-                <Analytics sx={{ fontSize: 64, color: "primary.main", mb: 2 }} />
-                <Typography variant="h6" gutterBottom>
-                  Ready to Analyze
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Document: {file?.name}
-                </Typography>
-                <Paper sx={{ p: 2, mt: 2, textAlign: "left" }}>
-                  <Typography variant="body2">
-                    <strong>Connector:</strong> {formData.connector?.name}
+                
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Size:</Typography>
+                  <Typography variant="body1">
+                    {file ? (file.size / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown'}
                   </Typography>
-                  <Typography variant="body2">
-                    <strong>Model:</strong> {formData.model?.name}
+                </Box>
+                
+                <Box>
+                  <Typography variant="body2" color="text.secondary">File Type:</Typography>
+                  <Typography variant="body1">{file?.type || 'Unknown'}</Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Analysis Model:</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    {selectedModelInfo?.icon}
+                    <Typography variant="body1">{selectedModelInfo?.label}</Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {selectedModelInfo?.description}
                   </Typography>
-                  <Typography variant="body2">
-                    <strong>File:</strong> {file?.name} ({file ? (file.size / 1024).toFixed(1) : 0} KB)
-                  </Typography>
-                </Paper>
-              </>
-            )}
+                </Box>
 
-            {isAnalyzing && (
-              <>
-                <CircularProgress size={60} sx={{ mb: 2 }} />
-                <Typography variant="h6" gutterBottom>
-                  Analyzing Document...
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  This may take a few moments
-                </Typography>
-              </>
-            )}
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Data Status:</Typography>
+                  <Chip 
+                    label={file?.base64 ? "File data ready" : "No file data"} 
+                    color={file?.base64 ? "success" : "error"} 
+                    size="small" 
+                  />
+                </Box>
+              </Box>
+            </Paper>
 
-            {analysisComplete && (
-              <>
-                <Analytics sx={{ fontSize: 64, color: "success.main", mb: 2 }} />
-                <Typography variant="h6" color="success.main" gutterBottom>
-                  Analysis Complete!
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Your document has been processed successfully
-                </Typography>
-              </>
+            {error && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {error}
+              </Alert>
             )}
           </Box>
         );
 
       default:
-        return null;
+        return 'Unknown step';
     }
   };
 
-  if (!file) return null;
+  const isStepValid = (step: number) => {
+    switch (step) {
+      case 0:
+        return selectedModel !== "";
+      case 1:
+        return selectedModel !== "" && file !== null && !!file.base64;
+      default:
+        return false;
+    }
+  };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography variant="h6">Analyze Document</Typography>
-        <IconButton onClick={handleClose} disabled={isAnalyzing}>
-          <Close />
-        </IconButton>
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{
+        sx: { minHeight: 500 }
+      }}
+    >
+      <DialogTitle>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Analytics color="primary" />
+            <Typography variant="h6">Document Analysis</Typography>
+          </Box>
+          <IconButton onClick={handleClose} disabled={isAnalyzing}>
+            <Close />
+          </IconButton>
+        </Box>
       </DialogTitle>
 
       <DialogContent>
-        <Box sx={{ mb: 3 }}>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {steps.map((label, index) => (
-              <Step key={label} completed={isStepComplete(index)}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Box>
+        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-        {state.error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {state.error}
-          </Alert>
-        )}
-
-        {renderStepContent(activeStep)}
+        {getStepContent(activeStep)}
       </DialogContent>
 
-      <DialogActions sx={{ p: 2 }}>
+      <DialogActions sx={{ p: 3, pt: 0 }}>
         <Button 
-          onClick={handleBack} 
-          disabled={activeStep === 0 || isAnalyzing}
+          onClick={handleClose} 
+          disabled={isAnalyzing}
         >
-          Back
+          Cancel
         </Button>
-        <Button
-          variant="contained"
-          onClick={handleNext}
-          disabled={!canProceed() || isAnalyzing}
-        >
-          {activeStep === steps.length - 1 ? 
-            (isAnalyzing ? "Analyzing..." : "Start Analysis") : 
-            "Next"
-          }
-        </Button>
+        
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {activeStep > 0 && (
+            <Button 
+              onClick={handleBack} 
+              disabled={isAnalyzing}
+            >
+              Back
+            </Button>
+          )}
+          
+          <Button 
+            variant="contained" 
+            onClick={handleNext}
+            disabled={!isStepValid(activeStep) || isAnalyzing}
+            startIcon={isAnalyzing ? <CircularProgress size={16} /> : undefined}
+          >
+            {isAnalyzing ? 'Analyzing...' : 
+             activeStep === steps.length - 1 ? 'Analyze Document' : 'Next'}
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

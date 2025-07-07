@@ -5,12 +5,15 @@ const axios = require("axios");
 const getToken = async (req, res, next) => {
   try {
     if (process.env.NODE_ENV === "development") {
+
+  
       // Read token from local Token.json file
       const tokenPath = path.join(
         __dirname,
         "../../__tests__/samples/AzureToken.json"
       );
       const tokenData = await fs.readFile(tokenPath, "utf-8");
+
       req.token = JSON.parse(tokenData);
       return next();
     }

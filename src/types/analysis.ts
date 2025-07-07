@@ -1,3 +1,5 @@
+import { DocumentAnalysisResult } from "../services/documentService";
+
 export interface ConnectorConfig {
   id: string;
   name: string;
@@ -11,9 +13,15 @@ export interface ModelConfig {
   provider: string;
   capabilities: string[];
 }
-
+interface DocumentData {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+}
 export interface AnalysisState {
-  documentData: any | null;
+  documentData: DocumentData | null;
+
   base64: string | null;
   connectorName: string | null;
   connectorLocation: string | null;
@@ -21,29 +29,34 @@ export interface AnalysisState {
   model: string | null;
   isProcessing: boolean;
   error: string | null;
-  analysisResults: any | null;
+  analysisResults: unknown | null;
 }
 
-export type AnalysisAction = 
-  | { type: 'SET_DOCUMENT_DATA'; payload: any }
-  | { type: 'SET_BASE64'; payload: string }
-  | { type: 'SET_CONNECTOR'; payload: { name: string; location: string; id: string } }
-  | { type: 'SET_MODEL'; payload: string }
-  | { type: 'SET_PROCESSING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'SET_RESULTS'; payload: any }
-  | { type: 'CLEAR_ANALYSIS' };
+export type AnalysisAction =
+  | { type: "SET_DOCUMENT_DATA"; payload: unknown }
+  | { type: "SET_BASE64"; payload: string }
+  | {
+      type: "SET_CONNECTOR";
+      payload: { name: string; location: string; id: string };
+    }
+  | { type: "SET_MODEL"; payload: string }
+  | { type: "SET_PROCESSING"; payload: boolean }
+  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "SET_RESULTS"; payload: unknown }
+  | { type: "CLEAR_ANALYSIS" };
 
 export interface AnalysisContextType {
   state: AnalysisState;
   actions: {
-    setDocumentData: (data: any) => void;
+    setAnalysisResult(data: DocumentAnalysisResult): unknown;
+    setLoading(arg0: boolean): unknown;
+    setDocumentData: (data: unknown) => void;
     setBase64: (base64: string) => void;
     setConnector: (name: string, location: string, id: string) => void;
     setModel: (model: string) => void;
     setProcessing: (processing: boolean) => void;
     setError: (error: string | null) => void;
-    setResults: (results: any) => void;
+    setResults: (results: unknown) => void;
     clearAnalysis: () => void;
   };
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ClimbingBoxLoader } from "react-spinners";
 import { Box } from "@mui/material";
 import { useTheme } from "@mui/material";
@@ -6,7 +6,7 @@ import Sidebar from "./Sidebar";
 
 const LoadingSpinner = () => {
   const theme = useTheme();
-  const [showSpinner, setShowSpinner] = useState(false); // Control visibility
+  const [showSpinner] = useState(false); // Control visibility
 
  
   return (

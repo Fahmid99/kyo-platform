@@ -8,8 +8,8 @@ interface KeyValuePair {
   confidence: number;
   pageNumber: number;
   color: string;
-  keyBoundingRegions?: any[];
-  valueBoundingRegions?: any[];
+  keyBoundingRegions?: unknown[];
+  valueBoundingRegions?: unknown[];
 }
 
 interface FormResultsCardProps {

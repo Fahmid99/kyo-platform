@@ -13,7 +13,7 @@ export interface ModelConfig {
   provider: string;
   capabilities: string[];
 }
-interface DocumentData {
+export interface DocumentData {
   id: string;
   name: string;
   type: string;

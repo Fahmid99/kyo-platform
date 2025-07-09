@@ -8,12 +8,6 @@ import {
   IconButton,
   Typography,
   Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Paper,
-  Stepper,
   Step,
   StepLabel,
   Alert,
@@ -21,8 +15,18 @@ import {
   CircularProgress,
   Card,
   CardContent,
+  Paper,
+  Stepper,
 } from "@mui/material";
-import { Close, Analytics, Description, Receipt, Business, Assignment, Layout, DocumentScanner } from "@mui/icons-material";
+import {
+  Close,
+  Analytics,
+
+  Receipt,
+  Business,
+  Assignment,
+  DocumentScanner,
+} from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAnalysis } from "../../hooks/useAnalysis";
 import documentService from "../../services/documentService";
@@ -32,7 +36,7 @@ interface AnalysisModalProps {
   open: boolean;
   onClose: () => void;
   file: DocumentFile | null;
-  onAnalysisComplete?: (results: any) => void;
+  onAnalysisComplete?: (results: unknown) => void;
 }
 
 interface AzureModel {
@@ -44,41 +48,41 @@ interface AzureModel {
 
 const azureModels: AzureModel[] = [
   {
-    value: 'prebuilt-invoice',
-    label: 'Invoice',
-    description: 'Extract data from invoices',
-    icon: <Receipt />
+    value: "prebuilt-invoice",
+    label: "Invoice",
+    description: "Extract data from invoices",
+    icon: <Receipt />,
   },
   {
-    value: 'prebuilt-receipt',
-    label: 'Receipt',
-    description: 'Extract data from receipts',
-    icon: <Receipt />
+    value: "prebuilt-receipt",
+    label: "Receipt",
+    description: "Extract data from receipts",
+    icon: <Receipt />,
   },
   {
-    value: 'prebuilt-businessCard',
-    label: 'Business Card',
-    description: 'Extract contact information from business cards',
-    icon: <Business />
+    value: "prebuilt-businessCard",
+    label: "Business Card",
+    description: "Extract contact information from business cards",
+    icon: <Business />,
   },
   {
-    value: 'prebuilt-idDocument',
-    label: 'ID Document',
-    description: 'Extract data from identity documents',
-    icon: <Assignment />
+    value: "prebuilt-idDocument",
+    label: "ID Document",
+    description: "Extract data from identity documents",
+    icon: <Assignment />,
   },
   {
-    value: 'prebuilt-layout',
-    label: 'Layout Analysis',
-    description: 'Analyze document layout and structure',
-    icon: <Business />
+    value: "prebuilt-layout",
+    label: "Layout Analysis",
+    description: "Analyze document layout and structure",
+    icon: <Business />,
   },
   {
-    value: 'prebuilt-document',
-    label: 'General Document',
-    description: 'General document analysis',
-    icon: <DocumentScanner />
-  }
+    value: "prebuilt-document",
+    label: "General Document",
+    description: "General document analysis",
+    icon: <DocumentScanner />,
+  },
 ];
 
 const steps = ["Select Analysis Type", "Review & Analyze"];
@@ -152,7 +156,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
         model: selectedModel,
         hasBase64: !!file.base64,
         base64Length: file.base64?.length || 0,
-        base64Preview: file.base64?.substring(0, 50) + "..."
+        base64Preview: file.base64?.substring(0, 50) + "...",
       });
 
       // Store file info and base64 in context
@@ -169,40 +173,49 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
       // Call the analysis API using the base64 data that's already available
       console.log("📤 Calling documentService.analyzeDocument with:", {
         scanType: selectedModel,
-        base64Length: file.base64.length
+        base64Length: file.base64.length,
       });
-      
-      const analysisResult = await documentService.analyzeDocument(file.base64, selectedModel);
-      
+
+      const analysisResult = await documentService.analyzeDocument(
+        file.base64,
+        selectedModel
+      );
+
       console.log("✅ Analysis result:", analysisResult);
-      
+
       if (analysisResult.success && analysisResult.data) {
         // Store results in context
         actions.setResults(analysisResult.data);
         actions.setProcessing(false);
-        
+
         // Close modal and navigate to results page
         handleClose();
-        navigate('/analyze/results', { 
-          state: { 
+        navigate("/analyze/results", {
+          state: {
             analysisData: analysisResult.data,
             fileName: file.name,
-            model: selectedModel 
-          } 
+            model: selectedModel,
+            base64String: file.base64, // ADD THIS LINE!
+          },
         });
-        
+
         // Call completion callback if provided
         if (onAnalysisComplete) {
           onAnalysisComplete(analysisResult.data);
         }
       } else {
         // Handle API errors
-        const errorMessage = analysisResult.message?.description || "Analysis failed - no data returned";
+        const errorMessage =
+          analysisResult.message?.description ||
+          "Analysis failed - no data returned";
         throw new Error(errorMessage);
       }
     } catch (err) {
       console.error("❌ Analysis error:", err);
-      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during analysis";
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred during analysis";
       setError(errorMessage);
       actions.setProcessing(false);
       actions.setError?.(errorMessage);
@@ -222,27 +235,43 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Choose the appropriate prebuilt model for your document type
             </Typography>
-            
+
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
               </Alert>
             )}
 
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+            <Box
+              sx={{
+                display: "grid",
+                gap: 2,
+                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              }}
+            >
               {azureModels.map((model) => (
-                <Card 
+                <Card
                   key={model.value}
-                  sx={{ 
-                    cursor: 'pointer',
+                  sx={{
+                    cursor: "pointer",
                     border: selectedModel === model.value ? 2 : 1,
-                    borderColor: selectedModel === model.value ? 'primary.main' : 'divider',
-                    '&:hover': { borderColor: 'primary.main' }
+                    borderColor:
+                      selectedModel === model.value
+                        ? "primary.main"
+                        : "divider",
+                    "&:hover": { borderColor: "primary.main" },
                   }}
                   onClick={() => setSelectedModel(model.value)}
                 >
                   <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mb: 1,
+                      }}
+                    >
                       {model.icon}
                       <Typography variant="h6">{model.label}</Typography>
                       {selectedModel === model.value && (
@@ -260,7 +289,9 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
         );
 
       case 1:
-        const selectedModelInfo = azureModels.find(m => m.value === selectedModel);
+        { const selectedModelInfo = azureModels.find(
+          (m) => m.value === selectedModel
+        );
         return (
           <Box sx={{ minHeight: 200 }}>
             <Typography variant="h6" gutterBottom>
@@ -270,46 +301,79 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
               Confirm your settings before starting the analysis
             </Typography>
 
-            <Paper sx={{ p: 3, bgcolor: 'background.paper' }}>
-              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+            <Paper sx={{ p: 3, bgcolor: "background.paper" }}>
+              <Typography
+                variant="subtitle1"
+                gutterBottom
+                sx={{ fontWeight: 600 }}
+              >
                 Analysis Configuration
               </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Box>
-                  <Typography variant="body2" color="text.secondary">File:</Typography>
-                  <Typography variant="body1">{file?.name || 'No file selected'}</Typography>
-                </Box>
-                
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Size:</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    File:
+                  </Typography>
                   <Typography variant="body1">
-                    {file ? (file.size / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown'}
+                    {file?.name || "No file selected"}
                   </Typography>
                 </Box>
-                
+
                 <Box>
-                  <Typography variant="body2" color="text.secondary">File Type:</Typography>
-                  <Typography variant="body1">{file?.type || 'Unknown'}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Size:
+                  </Typography>
+                  <Typography variant="body1">
+                    {file
+                      ? (file.size / 1024 / 1024).toFixed(2) + " MB"
+                      : "Unknown"}
+                  </Typography>
                 </Box>
-                
+
                 <Box>
-                  <Typography variant="body2" color="text.secondary">Analysis Model:</Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    File Type:
+                  </Typography>
+                  <Typography variant="body1">
+                    {file?.type || "Unknown"}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Analysis Model:
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      mt: 0.5,
+                    }}
+                  >
                     {selectedModelInfo?.icon}
-                    <Typography variant="body1">{selectedModelInfo?.label}</Typography>
+                    <Typography variant="body1">
+                      {selectedModelInfo?.label}
+                    </Typography>
                   </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 0.5 }}
+                  >
                     {selectedModelInfo?.description}
                   </Typography>
                 </Box>
 
                 <Box>
-                  <Typography variant="body2" color="text.secondary">Data Status:</Typography>
-                  <Chip 
-                    label={file?.base64 ? "File data ready" : "No file data"} 
-                    color={file?.base64 ? "success" : "error"} 
-                    size="small" 
+                  <Typography variant="body2" color="text.secondary">
+                    Data Status:
+                  </Typography>
+                  <Chip
+                    label={file?.base64 ? "File data ready" : "No file data"}
+                    color={file?.base64 ? "success" : "error"}
+                    size="small"
                   />
                 </Box>
               </Box>
@@ -321,10 +385,10 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
               </Alert>
             )}
           </Box>
-        );
+        ); }
 
       default:
-        return 'Unknown step';
+        return "Unknown step";
     }
   };
 
@@ -340,17 +404,23 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
   };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="md" 
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: 500 }
+        sx: { minHeight: 500 },
       }}
     >
       <DialogTitle>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Analytics color="primary" />
             <Typography variant="h6">Document Analysis</Typography>
@@ -374,31 +444,28 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ p: 3, pt: 0 }}>
-        <Button 
-          onClick={handleClose} 
-          disabled={isAnalyzing}
-        >
+        <Button onClick={handleClose} disabled={isAnalyzing}>
           Cancel
         </Button>
-        
-        <Box sx={{ display: 'flex', gap: 1 }}>
+
+        <Box sx={{ display: "flex", gap: 1 }}>
           {activeStep > 0 && (
-            <Button 
-              onClick={handleBack} 
-              disabled={isAnalyzing}
-            >
+            <Button onClick={handleBack} disabled={isAnalyzing}>
               Back
             </Button>
           )}
-          
-          <Button 
-            variant="contained" 
+
+          <Button
+            variant="contained"
             onClick={handleNext}
             disabled={!isStepValid(activeStep) || isAnalyzing}
             startIcon={isAnalyzing ? <CircularProgress size={16} /> : undefined}
           >
-            {isAnalyzing ? 'Analyzing...' : 
-             activeStep === steps.length - 1 ? 'Analyze Document' : 'Next'}
+            {isAnalyzing
+              ? "Analyzing..."
+              : activeStep === steps.length - 1
+              ? "Analyze Document"
+              : "Next"}
           </Button>
         </Box>
       </DialogActions>

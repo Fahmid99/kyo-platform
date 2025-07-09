@@ -9,8 +9,8 @@ interface KeyValuePair {
   confidence: number;
   pageNumber: number;
   color: string;
-  keyBoundingRegions?: any[];
-  valueBoundingRegions?: any[];
+  keyBoundingRegions?: unknown[];
+  valueBoundingRegions?: unknown[];
 }
 
 const FormResults: React.FC = () => {
@@ -37,7 +37,7 @@ const FormResults: React.FC = () => {
           No key-value pairs extracted from this document.
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-          Debug: analysisData exists: {!!analysisData ? 'Yes' : 'No'}
+          Debug: analysisData exists: {!analysisData ? 'Yes' : 'No'}
         </Typography>
         <Typography variant="caption" color="text.secondary">
           Debug: keyValuePairs array length: {analysisData?.keyValuePairs?.length || 0}

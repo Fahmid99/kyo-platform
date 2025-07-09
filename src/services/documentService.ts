@@ -1,4 +1,5 @@
 import axios from "axios";
+import { AxiosError } from 'axios';
 
 export interface DocumentAnalysisResult {
   success: boolean;
@@ -10,36 +11,36 @@ export interface DocumentAnalysisResult {
       confidence: number;
       pageNumber: number;
       color: string;
-      valueBoundingRegions?: any[];
-      keyBoundingRegions?: any[];
+      valueBoundingRegions?: unknown[];
+      keyBoundingRegions?: unknown[];
     }>;
     documents: Array<{
       docType: string;
       confidence: number;
-      boundingRegions: any[];
+      boundingRegions: unknown[];
       fields: Array<{
         key: string;
         kind: string;
-        value: any;
+        value: unknown;
         confidence: number;
-        boundingRegions: any[];
+        boundingRegions: unknown[];
         color: string;
         pageNumber: number;
       }>;
     }>;
-    pages: any[];
-    paragraphs: any[];
-    words: any[];
+    pages: unknown[];
+    paragraphs: unknown[];
+    words: unknown[];
     pageWidth: number;
     pageHeight: number;
-    documentsInitial?: any;
-    keyValuePairsInitial?: any;
+    documentsInitial?: unknown;
+    keyValuePairsInitial?: unknown;
   };
   message?: {
     key: string;
     description: string;
   };
-  error?: string;
+  error?: unknown;
 }
 
 export interface ScanType {
@@ -96,36 +97,39 @@ class DocumentService {
 
       console.log("✅ Document analysis completed successfully:", response.data);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("❌ Document analysis failed:", error);
       
-      if (error.response?.data) {
-        // Return the error response from the backend
-        return {
-          success: false,
-          message: error.response.data.message,
-          error: error.response.data.error
-        };
+      // Check if it's an axios error
+      if (error instanceof AxiosError) {
+        if (error.response?.data) {
+          return {
+            success: false,
+            message: error.response.data.message,
+            error: error.response.data.error
+          };
+        }
+        
+        // Handle network/timeout errors
+        if (error.code === 'ECONNABORTED') {
+          return {
+            success: false,
+            message: {
+              key: "ERROR_TIMEOUT",
+              description: "The analysis request timed out. Please try again with a smaller file or contact support."
+            }
+          };
+        }
       }
       
-      // Handle network/timeout errors
-      if (error.code === 'ECONNABORTED') {
-        return {
-          success: false,
-          message: {
-            key: "ERROR_TIMEOUT",
-            description: "The analysis request timed out. Please try again with a smaller file or contact support."
-          }
-        };
-      }
-      
+      // Fallback for other errors
       return {
         success: false,
         message: {
-          key: "ERROR_NETWORK",
-          description: "A network error occurred. Please check your connection and try again."
+          key: "ERROR_UNKNOWN",
+          description: "An unexpected error occurred during analysis."
         },
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }

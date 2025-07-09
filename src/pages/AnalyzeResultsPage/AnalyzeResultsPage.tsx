@@ -1,12 +1,11 @@
-// src/pages/AnalysisResultsPage/AnalysisResultsPage.tsx
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+// Debug version of AnalyzeResultsPage.tsx with comprehensive logging
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
   Card,
   CardContent,
-  Grid,
   Paper,
   Chip,
   Button,
@@ -19,20 +18,20 @@ import {
   Link,
   Tabs,
   Tab,
-} from '@mui/material';
+} from "@mui/material";
+
+import Grid from "@mui/material/Grid";
+
 import {
   ExpandMore,
   Download,
   ArrowBack,
   Visibility,
-  TableChart,
   PictureAsPdf,
-} from '@mui/icons-material';
-import { useAnalysis } from '../../hooks/useAnalysis';
-import PdfViewer from './components/PdfViewer';
-import FormResults from './components/FormResults';
-
-interface AnalysisResultsPageProps {}
+} from "@mui/icons-material";
+import { useAnalysis } from "../../hooks/useAnalysis";
+import PdfViewer from "./components/PdfViewer";
+import FormResults from "./components/FormResults";
 
 interface KeyValuePair {
   key: string;
@@ -40,16 +39,16 @@ interface KeyValuePair {
   confidence: number;
   pageNumber: number;
   color: string;
-  keyBoundingRegions?: any[];
-  valueBoundingRegions?: any[];
+  keyBoundingRegions?: unknown[];
+  valueBoundingRegions?: unknown[];
 }
 
 interface AnalysisData {
   title: string;
   keyValuePairs: KeyValuePair[];
-  documents: any[];
-  pages: any[];
-  paragraphs: any[];
+  documents: unknown[];
+  pages: unknown[];
+  paragraphs: unknown[];
   pageWidth: number;
   pageHeight: number;
 }
@@ -66,23 +65,45 @@ const AnalysisResultsContext = React.createContext<{
 export const useAnalysisResults = () => {
   const context = React.useContext(AnalysisResultsContext);
   if (!context) {
-    throw new Error('useAnalysisResults must be used within AnalysisResultsContext');
+    throw new Error(
+      "useAnalysisResults must be used within AnalysisResultsContext"
+    );
   }
   return context;
 };
 
-const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = () => {
+const AnalysisResultsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { state: analysisState } = useAnalysis();
   const [loading, setLoading] = useState(true);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const [base64String, setBase64String] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string>('');
-  const [model, setModel] = useState<string>('');
+  const [fileName, setFileName] = useState<string>("");
+  const [model, setModel] = useState<string>("");
   const [activeTab, setActiveTab] = useState(0);
 
+  // Debug: Log all state changes
   useEffect(() => {
+    console.log("🔍 AnalyzeResultsPage: Component mounted/updated", {
+      locationState: location.state,
+      analysisState: {
+        hasBase64: !!analysisState.base64,
+        base64Length: analysisState.base64?.length || 0,
+        base64Preview: analysisState.base64?.substring(0, 50) || "null",
+        hasResults: !!analysisState.analysisResults,
+        hasDocumentData: !!analysisState.documentData,
+        documentName: analysisState.documentData?.name || "null",
+        model: analysisState.model || "null",
+      },
+      currentBase64String: base64String,
+      currentAnalysisData: !!analysisData,
+    });
+  });
+
+  useEffect(() => {
+    console.log("🚀 AnalyzeResultsPage: Main useEffect triggered");
+
     // Get data from navigation state or context
     const navState = location.state as {
       analysisData?: AnalysisData;
@@ -90,34 +111,98 @@ const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = () => {
       model?: string;
     };
 
+    console.log("📄 Navigation state:", navState);
+    console.log("📄 Analysis context state:", {
+      base64: analysisState.base64
+        ? `${analysisState.base64.length} chars`
+        : "null",
+      hasResults: !!analysisState.analysisResults,
+      hasDocumentData: !!analysisState.documentData,
+    });
+
     if (navState?.analysisData) {
+      console.log("✅ Using navigation state data");
       setAnalysisData(navState.analysisData);
-      setFileName(navState.fileName || 'Unknown Document');
-      setModel(navState.model || 'Unknown Model');
+      setFileName(navState.fileName || "Unknown Document");
+      setModel(navState.model || "Unknown Model");
+
       // Get base64 from context
-      setBase64String(analysisState.base64);
+      const contextBase64 = analysisState.base64;
+      console.log("📄 Base64 from context:", {
+        hasBase64: !!contextBase64,
+        length: contextBase64?.length || 0,
+        preview: contextBase64?.substring(0, 50) || "null",
+      });
+
+      setBase64String(contextBase64);
       setLoading(false);
     } else if (analysisState.analysisResults) {
+      console.log("✅ Using analysis state data");
       setAnalysisData(analysisState.analysisResults as AnalysisData);
-      setFileName(analysisState.documentData?.name || 'Unknown Document');
-      setModel(analysisState.model || 'Unknown Model');
-      setBase64String(analysisState.base64);
+      setFileName(analysisState.documentData?.name || "Unknown Document");
+      setModel(analysisState.model || "Unknown Model");
+
+      const contextBase64 = analysisState.base64;
+      console.log("📄 Base64 from analysis state:", {
+        hasBase64: !!contextBase64,
+        length: contextBase64?.length || 0,
+        preview: contextBase64?.substring(0, 50) || "null",
+      });
+
+      setBase64String(contextBase64);
       setLoading(false);
     } else {
-      // No data found, redirect back to analyze page
-      navigate('/analyze');
+      console.log("❌ No data found, redirecting to analyze page");
+      console.log("❌ Debug info:", {
+        navStateExists: !!navState,
+        navStateHasData: !!navState?.analysisData,
+        contextHasResults: !!analysisState.analysisResults,
+        contextHasBase64: !!analysisState.base64,
+      });
+
+      // Give it a moment to see if data arrives
+      setTimeout(() => {
+        if (!analysisData && !analysisState.analysisResults) {
+          navigate("/analyze");
+        }
+      }, 1000);
     }
-  }, [location.state, analysisState, navigate]);
+  }, [location.state, analysisState, navigate, analysisData]);
+
+  // Monitor context changes separately
+  useEffect(() => {
+    console.log("🔄 Analysis context changed:", {
+      hasBase64: !!analysisState.base64,
+      base64Length: analysisState.base64?.length || 0,
+      hasResults: !!analysisState.analysisResults,
+      hasDocumentData: !!analysisState.documentData,
+      isProcessing: analysisState.isProcessing,
+      error: analysisState.error,
+    });
+
+    // If base64 becomes available later, update it
+    if (analysisState.base64 && !base64String) {
+      console.log(
+        "📄 Late base64 update:",
+        analysisState.base64.length,
+        "characters"
+      );
+      setBase64String(analysisState.base64);
+    }
+  }, [analysisState, base64String]);
 
   const handleDownloadResults = () => {
     if (!analysisData) return;
-    
+
     const dataStr = JSON.stringify(analysisData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = `${fileName.replace(/\.[^/.]+$/, '')}_analysis_results.json`;
+    link.download = `${fileName.replace(
+      /\.[^/.]+$/,
+      ""
+    )}_analysis_results.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -141,49 +226,63 @@ const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = () => {
     // Convert to Blob and trigger download
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = 'document_analysis_results.csv';
+    link.download = "document_analysis_results.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
 
   const formatModelName = (modelValue: string) => {
     const modelMap: { [key: string]: string } = {
-      'prebuilt-invoice': 'Invoice Analysis',
-      'prebuilt-receipt': 'Receipt Analysis',
-      'prebuilt-businessCard': 'Business Card Analysis',
-      'prebuilt-idDocument': 'ID Document Analysis',
-      'prebuilt-layout': 'Layout Analysis',
-      'prebuilt-document': 'General Document Analysis',
+      "prebuilt-invoice": "Invoice Analysis",
+      "prebuilt-receipt": "Receipt Analysis",
+      "prebuilt-businessCard": "Business Card Analysis",
+      "prebuilt-idDocument": "ID Document Analysis",
+      "prebuilt-layout": "Layout Analysis",
+      "prebuilt-document": "General Document Analysis",
     };
     return modelMap[modelValue] || modelValue;
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: 400,
+        }}
+      >
         <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Loading analysis results...</Typography>
       </Box>
     );
   }
-  console.log(analysisData)
 
-  console.log(analysisData)
+  console.log("🎨 Rendering AnalyzeResultsPage with:", {
+    hasAnalysisData: !!analysisData,
+    hasBase64String: !!base64String,
+    base64Length: base64String?.length || 0,
+  });
+
   return (
     <AnalysisResultsContext.Provider value={{ analysisData, base64String }}>
       <Box sx={{ p: 3 }}>
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
-          <Link 
-            color="inherit" 
-            href="/analyze" 
-            onClick={(e) => { e.preventDefault(); navigate('/analyze'); }}
-            sx={{ cursor: 'pointer' }}
+          <Link
+            color="inherit"
+            href="/analyze"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/analyze");
+            }}
+            sx={{ cursor: "pointer" }}
           >
             Document Analysis
           </Link>
@@ -191,67 +290,73 @@ const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = () => {
         </Breadcrumbs>
 
         {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 3,
+          }}
+        >
           <Box>
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: 700, color: "#111827", mb: 1 }}
+            >
               Analysis Results
             </Typography>
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              {fileName}
+            <Typography variant="body2" sx={{ color: "#6b7280" }}>
+              Document: {fileName} • Model: {formatModelName(model)}
             </Typography>
-            <Chip 
-              label={formatModelName(model)} 
-              color="primary" 
-              variant="outlined" 
-              sx={{ mb: 2 }}
-            />
           </Box>
-          
-          <Box sx={{ display: 'flex', gap: 1 }}>
+
+          <Box sx={{ display: "flex", gap: 1 }}>
             <Button
               variant="outlined"
-              startIcon={<ArrowBack />}
-              onClick={() => navigate('/analyze')}
-            >
-              Back to Analyze
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<TableChart />}
+              startIcon={<Download />}
               onClick={generateCSV}
+              disabled={!analysisData}
             >
               Export CSV
             </Button>
             <Button
-              variant="contained"
+              variant="outlined"
               startIcon={<Download />}
               onClick={handleDownloadResults}
+              disabled={!analysisData}
             >
-              Download Results
+              Download JSON
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBack />}
+              onClick={() => navigate("/analyze")}
+            >
+              Back to Analysis
             </Button>
           </Box>
         </Box>
 
-        {/* Summary Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        {/* Stats Cards */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" color="primary" gutterBottom>
-                  {analysisData.keyValuePairs?.length || 0}
+                  {analysisData?.keyValuePairs?.length || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Key-Value Pairs Extracted
+                  Key-Value Pairs
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
+
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" color="primary" gutterBottom>
-                  {analysisData.pages?.length || 0}
+                  {analysisData?.pages?.length || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Pages Analyzed
@@ -259,12 +364,12 @@ const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = () => {
               </CardContent>
             </Card>
           </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
+
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" color="primary" gutterBottom>
-                  {analysisData.paragraphs?.length || 0}
+                  {analysisData?.paragraphs?.length || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Paragraphs Detected
@@ -272,12 +377,12 @@ const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = () => {
               </CardContent>
             </Card>
           </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
+
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" color="primary" gutterBottom>
-                  {analysisData.documents?.length || 0}
+                  {analysisData?.documents?.length || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Structured Documents
@@ -288,16 +393,20 @@ const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = () => {
         </Grid>
 
         {/* Main Content Tabs */}
-        <Paper sx={{ width: '100%' }}>
-          <Tabs value={activeTab} onChange={handleTabChange} aria-label="analysis results tabs">
-            <Tab 
-              label="PDF Viewer & Form" 
-              icon={<PictureAsPdf />} 
+        <Paper sx={{ width: "100%" }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="analysis results tabs"
+          >
+            <Tab
+              label="PDF Viewer & Form"
+              icon={<PictureAsPdf />}
               iconPosition="start"
             />
-            <Tab 
-              label="Detailed Results" 
-              icon={<Visibility />} 
+            <Tab
+              label="Detailed Results"
+              icon={<Visibility />}
               iconPosition="start"
             />
           </Tabs>
@@ -305,39 +414,51 @@ const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = () => {
           <Box sx={{ p: 3 }}>
             {activeTab === 0 && (
               // PDF Viewer and Form Results
-              <Box sx={{ display: 'flex', gap: 2, height: '80vh' }}>
+              <Box sx={{ display: "flex", gap: 2, height: "80vh" }}>
                 <Box sx={{ flex: 1 }}>
-                  <PdfViewer />
+                  {base64String ? (
+                    <PdfViewer />
+                  ) : (
+                    <Card
+                      sx={{
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <CardContent sx={{ textAlign: "center" }}>
+                        <Typography variant="h6" color="error" gutterBottom>
+                          PDF Not Available
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          The PDF data is not available. This might be due to:
+                        </Typography>
+                        <Box component="ul" sx={{ textAlign: "left", mt: 1 }}>
+                          <li>Navigation state was cleared</li>
+                          <li>Context was reset during page transition</li>
+                          <li>The original file data was lost</li>
+                        </Box>
+                        <Button
+                          variant="outlined"
+                          onClick={() => navigate("/analyze")}
+                          sx={{ mt: 2 }}
+                        >
+                          Go Back to Upload New File
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
                 </Box>
-                <Box sx={{ 
-                  width: '500px', 
-                  border: "1px solid #e1e1e1",
-                  boxShadow: "2px 2px 4px rgba(0, 0, 0, 0.1)",
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  <Box sx={{
-                    border: "1px solid #e1e1e1",
-                    mb: 1,
-                    p: 2,
-                    boxShadow: "2px 2px 4px rgba(0, 0, 0, 0.1)",
-                    backgroundColor: 'background.paper'
-                  }}>
-                    <Typography variant="h6" gutterBottom>
-                      Extracted Data
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button size="small" variant="outlined" onClick={generateCSV}>
-                        Export CSV
-                      </Button>
-                      <Button size="small" variant="outlined" onClick={handleDownloadResults}>
-                        Export JSON
-                      </Button>
-                    </Box>
-                  </Box>
-                  <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                    <FormResults />
-                  </Box>
+                <Box
+                  sx={{
+                    width: "500px",
+                    border: "1px solid #e0e0e0",
+                    borderRadius: 1,
+                    overflow: "auto",
+                  }}
+                >
+                  <FormResults />
                 </Box>
               </Box>
             )}
@@ -345,62 +466,66 @@ const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = () => {
             {activeTab === 1 && (
               // Detailed Results View
               <Box>
-                {/* Document Title */}
-                {analysisData.title && analysisData.title !== "Title not found" && (
-                  <Card sx={{ mb: 3 }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        Document Title
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        {analysisData.title}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Detailed analysis results */}
-                <Accordion defaultExpanded>
-                  <AccordionSummary expandIcon={<ExpandMore />}>
-                    <Typography variant="h6">
-                      Analysis Summary
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" color="text.secondary">
-                          Analysis Model:
-                        </Typography>
-                        <Typography variant="body1">{formatModelName(model)}</Typography>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" color="text.secondary">
-                          File Name:
-                        </Typography>
-                        <Typography variant="body1">{fileName}</Typography>
-                      </Grid>
-                      {analysisData.pageWidth && analysisData.pageHeight && (
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Page Dimensions:
+                {analysisData?.keyValuePairs &&
+                analysisData.keyValuePairs.length > 0 ? (
+                  analysisData.keyValuePairs.map((pair, index) => (
+                    <Accordion key={index}>
+                      <AccordionSummary expandIcon={<ExpandMore />}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                            width: "100%",
+                          }}
+                        >
+                          <Typography
+                            variant="subtitle1"
+                            sx={{ fontWeight: "bold", flex: 1 }}
+                          >
+                            {pair.key}
                           </Typography>
-                          <Typography variant="body1">
-                            {analysisData.pageWidth} × {analysisData.pageHeight}
-                          </Typography>
-                        </Grid>
-                      )}
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" color="text.secondary">
-                          Analysis Date:
-                        </Typography>
+                          <Chip
+                            label={`${Math.round(pair.confidence * 100)}%`}
+                            color={
+                              pair.confidence > 0.8
+                                ? "success"
+                                : pair.confidence > 0.6
+                                ? "warning"
+                                : "error"
+                            }
+                            size="small"
+                          />
+                          <Chip
+                            label={`Page ${pair.pageNumber}`}
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails>
                         <Typography variant="body1">
-                          {new Date().toLocaleString()}
+                          <strong>Value:</strong> {pair.value}
                         </Typography>
-                      </Grid>
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 1 }}
+                        >
+                          <strong>Confidence:</strong>{" "}
+                          {Math.round(pair.confidence * 100)}%
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Page:</strong> {pair.pageNumber}
+                        </Typography>
+                      </AccordionDetails>
+                    </Accordion>
+                  ))
+                ) : (
+                  <Alert severity="info">
+                    No key-value pairs were extracted from this document.
+                  </Alert>
+                )}
               </Box>
             )}
           </Box>

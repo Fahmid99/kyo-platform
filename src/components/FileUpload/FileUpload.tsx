@@ -5,7 +5,7 @@ import FileUploadZone from "./FileUploadZone";
 import FileList from "./FileList";
 import AnalysisStatus from "./AnalysisStatus";
 import { DocumentFile, FileUploadProps } from "./types";
-import documentService from "../../services/documentService";
+// import documentService from "../../services/documentService";
 
 const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, onAnalyzeFile }) => {
   const [uploadedFiles, setUploadedFiles] = useState<DocumentFile[]>([]);

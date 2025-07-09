@@ -5,7 +5,7 @@ interface PageHeaderProps {
   description: string;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ title, description }) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ title }) => {
   return (
     <Box>
         <Box

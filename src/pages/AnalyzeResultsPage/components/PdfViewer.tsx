@@ -1,11 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { pdfjs } from "react-pdf";
-
-
 import PdfPage from "./PdfPage";
 import { Box, Card } from "@mui/material";
 import PdfControls from "./PdfControls";
-import { useAnalysisResults } from  "../AnalyzeResultsPage";
+import { useAnalysisResults, useIndexingMode } from "../AnalyzeResultsPage";
 
 // Set up the PDF worker
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -13,15 +11,26 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-const PdfViewer: React.FC = () => {
+interface PdfViewerProps {
+  // Remove isIndexingMode prop since we'll get it from context
+}
+
+const PdfViewer: React.FC<PdfViewerProps> = () => {
   const [scale, setScale] = useState<number>(1);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [numPages, setNumPages] = useState<number>(1);
   
   const { base64String } = useAnalysisResults();
+  const { isIndexingMode } = useIndexingMode();
+
+  // Listen for indexing mode changes
+  useEffect(() => {
+    console.log("📋 PdfViewer: Indexing mode changed to:", isIndexingMode);
+  }, [isIndexingMode]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }): void => {
     setNumPages(numPages);
+    console.log("📄 PdfViewer: Document loaded with", numPages, "pages");
   };
 
   const handleZoomIn = () => {
@@ -99,6 +108,7 @@ const PdfViewer: React.FC = () => {
             pageNumber={pageNumber}
             scale={scale}
             onDocumentLoadSuccess={onDocumentLoadSuccess}
+            isIndexingMode={isIndexingMode}
           />
         </Card>
       </Box>

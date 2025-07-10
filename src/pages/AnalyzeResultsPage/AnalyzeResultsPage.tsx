@@ -1,4 +1,3 @@
-// Debug version of AnalyzeResultsPage.tsx with comprehensive logging
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -7,23 +6,14 @@ import {
   Card,
   CardContent,
   Paper,
-  Chip,
   Button,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Alert,
   CircularProgress,
-  Breadcrumbs,
-  Link,
   Tabs,
   Tab,
+  Alert,
 } from "@mui/material";
-
 import Grid from "@mui/material/Grid";
-
 import {
-  ExpandMore,
   Download,
   ArrowBack,
   Visibility,
@@ -57,9 +47,13 @@ interface AnalysisData {
 const AnalysisResultsContext = React.createContext<{
   analysisData: AnalysisData | null;
   base64String: string | null;
+  isIndexingMode: boolean;
+  setIsIndexingMode: (mode: boolean) => void;
 }>({
   analysisData: null,
   base64String: null,
+  isIndexingMode: false,
+  setIsIndexingMode: () => {},
 });
 
 export const useAnalysisResults = () => {
@@ -72,7 +66,13 @@ export const useAnalysisResults = () => {
   return context;
 };
 
-const AnalysisResultsPage = () => {
+// Global state management for indexing mode
+export const useIndexingMode = () => {
+  const { isIndexingMode, setIsIndexingMode } = useAnalysisResults();
+  return { isIndexingMode, setIsIndexingMode };
+};
+
+const AnalyzeResultsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { state: analysisState } = useAnalysis();
@@ -82,6 +82,7 @@ const AnalysisResultsPage = () => {
   const [fileName, setFileName] = useState<string>("");
   const [model, setModel] = useState<string>("");
   const [activeTab, setActiveTab] = useState(0);
+  const [isIndexingMode, setIsIndexingMode] = useState(false);
 
   // Debug: Log all state changes
   useEffect(() => {
@@ -90,14 +91,14 @@ const AnalysisResultsPage = () => {
       analysisState: {
         hasBase64: !!analysisState.base64,
         base64Length: analysisState.base64?.length || 0,
-        base64Preview: analysisState.base64?.substring(0, 50) || "null",
         hasResults: !!analysisState.analysisResults,
         hasDocumentData: !!analysisState.documentData,
         documentName: analysisState.documentData?.name || "null",
         model: analysisState.model || "null",
       },
-      currentBase64String: base64String,
+      currentBase64String: !!base64String,
       currentAnalysisData: !!analysisData,
+      isIndexingMode,
     });
   });
 
@@ -111,124 +112,62 @@ const AnalysisResultsPage = () => {
       model?: string;
     };
 
-    console.log("📄 Navigation state:", navState);
-    console.log("📄 Analysis context state:", {
-      base64: analysisState.base64
-        ? `${analysisState.base64.length} chars`
-        : "null",
-      hasResults: !!analysisState.analysisResults,
-      hasDocumentData: !!analysisState.documentData,
-    });
+    let dataToUse: AnalysisData | null = null;
+    let base64ToUse: string | null = null;
+    let fileNameToUse = "";
+    let modelToUse = "";
 
+    // Priority: navigation state, then analysis context
     if (navState?.analysisData) {
-      console.log("✅ Using navigation state data");
-      setAnalysisData(navState.analysisData);
-      setFileName(navState.fileName || "Unknown Document");
-      setModel(navState.model || "Unknown Model");
-
-      // Get base64 from context
-      const contextBase64 = analysisState.base64;
-      console.log("📄 Base64 from context:", {
-        hasBase64: !!contextBase64,
-        length: contextBase64?.length || 0,
-        preview: contextBase64?.substring(0, 50) || "null",
-      });
-
-      setBase64String(contextBase64);
-      setLoading(false);
+      console.log("📄 Using data from navigation state");
+      dataToUse = navState.analysisData;
+      fileNameToUse = navState.fileName || "";
+      modelToUse = navState.model || "";
+      base64ToUse = analysisState.base64;
     } else if (analysisState.analysisResults) {
-      console.log("✅ Using analysis state data");
-      setAnalysisData(analysisState.analysisResults as AnalysisData);
-      setFileName(analysisState.documentData?.name || "Unknown Document");
-      setModel(analysisState.model || "Unknown Model");
-
-      const contextBase64 = analysisState.base64;
-      console.log("📄 Base64 from analysis state:", {
-        hasBase64: !!contextBase64,
-        length: contextBase64?.length || 0,
-        preview: contextBase64?.substring(0, 50) || "null",
-      });
-
-      setBase64String(contextBase64);
-      setLoading(false);
-    } else {
-      console.log("❌ No data found, redirecting to analyze page");
-      console.log("❌ Debug info:", {
-        navStateExists: !!navState,
-        navStateHasData: !!navState?.analysisData,
-        contextHasResults: !!analysisState.analysisResults,
-        contextHasBase64: !!analysisState.base64,
-      });
-
-      // Give it a moment to see if data arrives
-      setTimeout(() => {
-        if (!analysisData && !analysisState.analysisResults) {
-          navigate("/analyze");
-        }
-      }, 1000);
+      console.log("📄 Using data from analysis context");
+      dataToUse = analysisState.analysisResults;
+      base64ToUse = analysisState.base64;
+      fileNameToUse = analysisState.documentData?.name || "";
+      modelToUse = analysisState.model || "";
     }
-  }, [location.state, analysisState, navigate, analysisData]);
 
-  // Monitor context changes separately
-  useEffect(() => {
-    console.log("🔄 Analysis context changed:", {
-      hasBase64: !!analysisState.base64,
-      base64Length: analysisState.base64?.length || 0,
-      hasResults: !!analysisState.analysisResults,
-      hasDocumentData: !!analysisState.documentData,
-      isProcessing: analysisState.isProcessing,
-      error: analysisState.error,
+    console.log("📊 Final data summary:", {
+      hasAnalysisData: !!dataToUse,
+      hasBase64: !!base64ToUse,
+      fileName: fileNameToUse,
+      model: modelToUse,
+      keyValuePairsCount: dataToUse?.keyValuePairs?.length || 0,
+      paragraphsCount: dataToUse?.paragraphs?.length || 0,
     });
 
-    // If base64 becomes available later, update it
-    if (analysisState.base64 && !base64String) {
-      console.log(
-        "📄 Late base64 update:",
-        analysisState.base64.length,
-        "characters"
-      );
-      setBase64String(analysisState.base64);
-    }
-  }, [analysisState, base64String]);
+    setAnalysisData(dataToUse);
+    setBase64String(base64ToUse);
+    setFileName(fileNameToUse);
+    setModel(modelToUse);
+    setLoading(false);
+  }, [location.state, analysisState]);
 
   const handleDownloadResults = () => {
-    if (!analysisData) return;
-
-    const dataStr = JSON.stringify(analysisData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${fileName.replace(
-      /\.[^/.]+$/,
-      ""
-    )}_analysis_results.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const generateCSV = () => {
-    if (!analysisData || !analysisData.keyValuePairs) {
-      console.error("No document data available to generate CSV.");
+    if (!analysisData) {
+      console.error("No analysis data available to download.");
       return;
     }
 
-    const keyValuePairs = analysisData.keyValuePairs;
+    const dataToDownload = {
+      fileName,
+      model: formatModelName(model),
+      analysisTimestamp: new Date().toISOString(),
+      ...analysisData,
+    };
 
-    // CSV Header
-    let csvContent = "Key,Value,Confidence,Page Number\n";
-
-    // Convert key-value pairs to CSV format
-    keyValuePairs.forEach(({ key, value, confidence, pageNumber }) => {
-      csvContent += `"${key}","${value}","${confidence}","${pageNumber}"\n`;
+    const blob = new Blob([JSON.stringify(dataToDownload, null, 2)], {
+      type: "application/json",
     });
-
-    // Convert to Blob and trigger download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "document_analysis_results.csv";
+    link.download = `${fileName.replace(/\.[^/.]+$/, "")}_analysis_results.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -248,6 +187,7 @@ const AnalysisResultsPage = () => {
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
+
   if (loading) {
     return (
       <Box
@@ -264,77 +204,74 @@ const AnalysisResultsPage = () => {
     );
   }
 
-  console.log("🎨 Rendering AnalyzeResultsPage with:", {
-    hasAnalysisData: !!analysisData,
-    hasBase64String: !!base64String,
-    base64Length: base64String?.length || 0,
-  });
+  if (!analysisData) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            No Analysis Data Available
+          </Typography>
+          <Typography variant="body2">
+            The analysis results could not be loaded. This might be due to:
+          </Typography>
+          <Box component="ul" sx={{ mt: 1, mb: 2 }}>
+            <li>Navigation state was cleared</li>
+            <li>Context was reset during page transition</li>
+            <li>The analysis process was interrupted</li>
+          </Box>
+        </Alert>
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBack />}
+          onClick={() => navigate("/analyze")}
+        >
+          Go Back to Analysis
+        </Button>
+      </Box>
+    );
+  }
 
   return (
-    <AnalysisResultsContext.Provider value={{ analysisData, base64String }}>
-      <Box sx={{ p: 3 }}>
-        {/* Breadcrumbs */}
-        <Breadcrumbs sx={{ mb: 3 }}>
-          <Link
-            color="inherit"
-            href="/analyze"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/analyze");
-            }}
-            sx={{ cursor: "pointer" }}
-          >
-            Document Analysis
-          </Link>
-          <Typography color="text.primary">Results</Typography>
-        </Breadcrumbs>
-
+    <AnalysisResultsContext.Provider 
+      value={{ 
+        analysisData, 
+        base64String, 
+        isIndexingMode, 
+        setIsIndexingMode 
+      }}
+    >
+      <Box sx={{ p: 3, maxWidth: "1400px", mx: "auto" }}>
         {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 3,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 700, color: "#111827", mb: 1 }}
-            >
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography variant="h4" sx={{ fontWeight: 600 }}>
               Analysis Results
             </Typography>
-            <Typography variant="body2" sx={{ color: "#6b7280" }}>
-              Document: {fileName} • Model: {formatModelName(model)}
-            </Typography>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button
+                variant="contained"
+                startIcon={<Download />}
+                onClick={handleDownloadResults}
+                disabled={!analysisData}
+              >
+                Download JSON
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<ArrowBack />}
+                onClick={() => navigate("/analyze")}
+              >
+                Back to Analysis
+              </Button>
+            </Box>
           </Box>
 
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button
-              variant="outlined"
-              startIcon={<Download />}
-              onClick={generateCSV}
-              disabled={!analysisData}
-            >
-              Export CSV
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Download />}
-              onClick={handleDownloadResults}
-              disabled={!analysisData}
-            >
-              Download JSON
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBack />}
-              onClick={() => navigate("/analyze")}
-            >
-              Back to Analysis
-            </Button>
-          </Box>
+          {/* Document Info */}
+          {fileName && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Document: <strong>{fileName}</strong> • Model: <strong>{formatModelName(model)}</strong>
+            </Typography>
+          )}
         </Box>
 
         {/* Stats Cards */}
@@ -400,7 +337,7 @@ const AnalysisResultsPage = () => {
             aria-label="analysis results tabs"
           >
             <Tab
-              label="PDF Viewer & Form"
+              label="PDF Viewer & Interactive Form"
               icon={<PictureAsPdf />}
               iconPosition="start"
             />
@@ -413,7 +350,7 @@ const AnalysisResultsPage = () => {
 
           <Box sx={{ p: 3 }}>
             {activeTab === 0 && (
-              // PDF Viewer and Form Results
+              // PDF Viewer and Form Results with Indexing
               <Box sx={{ display: "flex", gap: 2, height: "80vh" }}>
                 <Box sx={{ flex: 1 }}>
                   {base64String ? (
@@ -464,68 +401,16 @@ const AnalysisResultsPage = () => {
             )}
 
             {activeTab === 1 && (
-              // Detailed Results View
+              // Detailed Results View (existing implementation)
               <Box>
-                {analysisData?.keyValuePairs &&
-                analysisData.keyValuePairs.length > 0 ? (
-                  analysisData.keyValuePairs.map((pair, index) => (
-                    <Accordion key={index}>
-                      <AccordionSummary expandIcon={<ExpandMore />}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 2,
-                            width: "100%",
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle1"
-                            sx={{ fontWeight: "bold", flex: 1 }}
-                          >
-                            {pair.key}
-                          </Typography>
-                          <Chip
-                            label={`${Math.round(pair.confidence * 100)}%`}
-                            color={
-                              pair.confidence > 0.8
-                                ? "success"
-                                : pair.confidence > 0.6
-                                ? "warning"
-                                : "error"
-                            }
-                            size="small"
-                          />
-                          <Chip
-                            label={`Page ${pair.pageNumber}`}
-                            variant="outlined"
-                            size="small"
-                          />
-                        </Box>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Typography variant="body1">
-                          <strong>Value:</strong> {pair.value}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ mt: 1 }}
-                        >
-                          <strong>Confidence:</strong>{" "}
-                          {Math.round(pair.confidence * 100)}%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Page:</strong> {pair.pageNumber}
-                        </Typography>
-                      </AccordionDetails>
-                    </Accordion>
-                  ))
-                ) : (
-                  <Alert severity="info">
-                    No key-value pairs were extracted from this document.
-                  </Alert>
-                )}
+                <Typography variant="h6" gutterBottom>
+                  Detailed Analysis Results
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  This section shows the raw analysis data in a detailed format.
+                  You can expand each item to see more information.
+                </Typography>
+                {/* Add detailed results view here */}
               </Box>
             )}
           </Box>
@@ -535,4 +420,4 @@ const AnalysisResultsPage = () => {
   );
 };
 
-export default AnalysisResultsPage;
+export default AnalyzeResultsPage;

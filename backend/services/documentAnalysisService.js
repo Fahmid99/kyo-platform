@@ -1,13 +1,149 @@
-// backend/services/documentAnalysisService.js
+// Enhanced backend/services/documentAnalysisService.js with consistent color scheme
 const {
   AzureKeyCredential,
   DocumentAnalysisClient,
-} = require("@azure/ai-form-recognizer"); // Changed from import to require
+} = require("@azure/ai-form-recognizer");
 
-// Helper function to generate random colors
-const getRandomColor = () => {
-  const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
-  return colors[Math.floor(Math.random() * colors.length)];
+// Professional color palette optimized for document highlighting
+const COLOR_PALETTE = [
+  {
+    name: "Ocean Blue",
+    primary: "#2563EB",
+    light: "#DBEAFE", 
+    dark: "#1D4ED8",
+    fill: "#2563EB20",
+    fillHover: "#2563EB35",
+    stroke: "#2563EB",
+    strokeHover: "#1D4ED8",
+    text: "#1E40AF"
+  },
+  {
+    name: "Emerald Green",
+    primary: "#059669",
+    light: "#D1FAE5",
+    dark: "#047857",
+    fill: "#05966920",
+    fillHover: "#05966935",
+    stroke: "#059669",
+    strokeHover: "#047857",
+    text: "#065F46"
+  },
+  {
+    name: "Amber Orange",
+    primary: "#F59E0B",
+    light: "#FEF3C7",
+    dark: "#D97706",
+    fill: "#F59E0B20",
+    fillHover: "#F59E0B35",
+    stroke: "#F59E0B",
+    strokeHover: "#D97706",
+    text: "#92400E"
+  },
+  {
+    name: "Rose Pink",
+    primary: "#E11D48",
+    light: "#FCE7F3",
+    dark: "#BE185D",
+    fill: "#E11D4820",
+    fillHover: "#E11D4835",
+    stroke: "#E11D48",
+    strokeHover: "#BE185D",
+    text: "#9F1239"
+  },
+  {
+    name: "Violet Purple",
+    primary: "#7C3AED",
+    light: "#EDE9FE",
+    dark: "#6D28D9",
+    fill: "#7C3AED20",
+    fillHover: "#7C3AED35",
+    stroke: "#7C3AED",
+    strokeHover: "#6D28D9",
+    text: "#5B21B6"
+  },
+  {
+    name: "Cyan Teal",
+    primary: "#0891B2",
+    light: "#CFFAFE",
+    dark: "#0E7490",
+    fill: "#0891B220",
+    fillHover: "#0891B235",
+    stroke: "#0891B2",
+    strokeHover: "#0E7490",
+    text: "#155E75"
+  },
+  {
+    name: "Indigo Blue",
+    primary: "#4F46E5",
+    light: "#E0E7FF",
+    dark: "#4338CA",
+    fill: "#4F46E520",
+    fillHover: "#4F46E535",
+    stroke: "#4F46E5",
+    strokeHover: "#4338CA",
+    text: "#3730A3"
+  },
+  {
+    name: "Red Crimson",
+    primary: "#DC2626",
+    light: "#FEE2E2",
+    dark: "#B91C1C",
+    fill: "#DC262620",
+    fillHover: "#DC262635",
+    stroke: "#DC2626",
+    strokeHover: "#B91C1C",
+    text: "#991B1B"
+  },
+  {
+    name: "Lime Green",
+    primary: "#65A30D",
+    light: "#ECFCCB",
+    dark: "#4D7C0F",
+    fill: "#65A30D20",
+    fillHover: "#65A30D35",
+    stroke: "#65A30D",
+    strokeHover: "#4D7C0F",
+    text: "#365314"
+  },
+  {
+    name: "Pink Magenta",
+    primary: "#C2410C",
+    light: "#FED7AA",
+    dark: "#9A3412",
+    fill: "#C2410C20",
+    fillHover: "#C2410C35",
+    stroke: "#C2410C",
+    strokeHover: "#9A3412",
+    text: "#7C2D12"
+  }
+];
+
+// Generate consistent colors for key-value pairs
+const generateKeyValueColor = (index) => {
+  return COLOR_PALETTE[index % COLOR_PALETTE.length];
+};
+
+// Get confidence-based styling
+const getConfidenceBasedStyling = (baseColor, confidence) => {
+  if (confidence >= 0.9) {
+    return {
+      ...baseColor,
+      opacity: 1.0,
+      strokeWidth: 2.5
+    };
+  } else if (confidence >= 0.7) {
+    return {
+      ...baseColor,
+      opacity: 0.8,
+      strokeWidth: 2.0
+    };
+  } else {
+    return {
+      ...baseColor,
+      opacity: 0.6,
+      strokeWidth: 1.5
+    };
+  }
 };
 
 class DocumentAnalysisService {
@@ -55,35 +191,50 @@ class DocumentAnalysisService {
         }
       }
 
-      // Process key-value pairs with safer access
+      // Process key-value pairs with consistent color scheme
       const keyValuePairsArray = keyValuePairs
-        ? keyValuePairs.map(({ key, value, confidence, boundingRegions }) => ({
-          key: key?.content || "Unknown key",
-          value: value?.content ?? "<undefined>",
-          confidence: confidence || 0,
-          valueBoundingRegions: value?.boundingRegions || [],
-          keyBoundingRegions: key?.boundingRegions || [],
-          color: getRandomColor(),
-          pageNumber: key?.boundingRegions?.[0]?.pageNumber || 1
-        }))
+        ? keyValuePairs.map(({ key, value, confidence, boundingRegions }, index) => {
+            const baseColor = generateKeyValueColor(index);
+            const colorWithConfidence = getConfidenceBasedStyling(baseColor, confidence || 0);
+            
+            return {
+              key: key?.content || "Unknown key",
+              value: value?.content ?? "<undefined>",
+              confidence: confidence || 0,
+              valueBoundingRegions: value?.boundingRegions || [],
+              keyBoundingRegions: key?.boundingRegions || [],
+              color: colorWithConfidence.primary,
+              colorScheme: colorWithConfidence,
+              pageNumber: key?.boundingRegions?.[0]?.pageNumber || 1,
+              index // For consistent color assignment
+            };
+          })
         : [];
 
-      // Process documents with safer access
+      // Process documents with consistent color scheme
       const documentsArray = documents
-        ? documents.map((document) => ({
+        ? documents.map((document, docIndex) => ({
           docType: document.docType,
           confidence: document.confidence,
           boundingRegions: document.boundingRegions || [],
           fields: Object.entries(document.fields || {}).map(
-            ([fieldKey, fieldData]) => ({
-              key: fieldKey,
-              kind: fieldData.kind || "unknown",
-              value: fieldData.content || fieldData.values || "N/A",
-              confidence: fieldData.confidence || 0,
-              boundingRegions: fieldData.boundingRegions || [],
-              color: getRandomColor(),
-              pageNumber: fieldData.boundingRegions?.[0]?.pageNumber || 1
-            })
+            ([fieldKey, fieldData], fieldIndex) => {
+              const colorIndex = (docIndex * 10 + fieldIndex) % COLOR_PALETTE.length;
+              const baseColor = generateKeyValueColor(colorIndex);
+              const colorWithConfidence = getConfidenceBasedStyling(baseColor, fieldData.confidence || 0);
+              
+              return {
+                key: fieldKey,
+                kind: fieldData.kind || "unknown",
+                value: fieldData.content || fieldData.values || "N/A",
+                confidence: fieldData.confidence || 0,
+                boundingRegions: fieldData.boundingRegions || [],
+                color: colorWithConfidence.primary,
+                colorScheme: colorWithConfidence,
+                pageNumber: fieldData.boundingRegions?.[0]?.pageNumber || 1,
+                index: colorIndex
+              };
+            }
           ),
         }))
         : [];
@@ -92,10 +243,12 @@ class DocumentAnalysisService {
       const pageHeight = pages?.[0]?.height || 0;
 
       console.log(`Document analysis completed. Found ${keyValuePairsArray.length} key-value pairs and ${documentsArray.length} structured documents`);
+      console.log(`Color scheme applied: ${keyValuePairsArray.length} items with consistent colors`);
 
       return {
         title,
         keyValuePairs: keyValuePairsArray,
+        keyValuePairsInitial: keyValuePairs,
         pageWidth,
         pageHeight,
         pages: pages || [],
@@ -103,7 +256,7 @@ class DocumentAnalysisService {
         words: words || [],
         documentsInitial: documents,
         documents: documentsArray,
-        keyValuePairsInitial: keyValuePairs,
+        colorPalette: COLOR_PALETTE, // Include color palette in response
       };
     } catch (error) {
       console.error("Document analysis error:", error);
@@ -111,7 +264,7 @@ class DocumentAnalysisService {
     }
   }
 
-  // ADD THIS METHOD - Your controller needs it!
+  // Validate scan type
   isValidScanType(scanType) {
     const validScanTypes = [
       'prebuilt-invoice',

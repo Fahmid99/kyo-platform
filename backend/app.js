@@ -9,6 +9,7 @@ const userRoutes = require("./routes/user.js");
 const platformRoutes = require("./routes/platform.js");
 const versionRoutes = require("./routes/version.js");
 const documentRoutes = require("./routes/document.js"); // Add this line
+const connectorRoutes = require("./routes/connectors.js")
 
 const app = express();
 app.use(middleware.handle(i18next));
@@ -27,6 +28,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/platform", platformRoutes);
 app.use("/api/version", versionRoutes);
+app.use("/api/connectors", connectorRoutes);
 
 // New document analysis routes
 app.use("/api/document", documentRoutes); // Add this line

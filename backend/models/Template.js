@@ -21,10 +21,10 @@ const templateScheme = new mongoose.SchemaType({
         validate: { 
             validator: async function(templateData) { 
                 const Connector = mongoose.model('Connector');
-                const connector = await Connector.findById(this.connectorId).populate("platformId");
+                const connector = await Connector.findById(this.connectorId).populate("connectorTypeId");
                 if (!connector) return false; 
 
-                if (connector.platformId.type === "kcim") { 
+                if (connector.connectorTypeId.type === "kcim") { 
                     return templateData && templateData.folderLocation && templateData.documentClass;
 
                 }

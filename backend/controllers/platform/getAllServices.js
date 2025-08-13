@@ -2,6 +2,9 @@ const Service = require("../../models/Service.js");
 
 const getAllServices = async (req, res) => {
   try {
+
+    const {connectorTypeId, config} = req.body; 
+    
     const services = await Service.find({});
     return res.status(200).json({ services });
   } catch (error) {

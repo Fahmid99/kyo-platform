@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "npm i && node server.js"
+    "start": "npm i && node server.js",
+    "seed:connector-types": "node scripts/seedConnectorTypes.js"
   },
   "author": "",
   "license": "ISC",

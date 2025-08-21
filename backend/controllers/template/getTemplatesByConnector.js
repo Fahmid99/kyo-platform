@@ -5,10 +5,10 @@ const getTemplatesByConnector = async (req, res) => {
     try {
         const { orgId } = req.claims;
 
-        const { connectorId } = req.params;
+        const { id } = req.params;
 
-        const templates = await Template.find({ orgId, connectorId });
-
+        const templates = await Template.find({ orgId, connectorId: id });
+        console.log(templates);
         if (!templates || templates.length === 0) {
             return res.status(404).json({
                 message: {

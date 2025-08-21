@@ -19,13 +19,19 @@ const getTemplatesByConnector = require("../controllers/template/getTemplatesByC
 
 router.get("/", getToken, getClaimsFromToken, validateOrgId, validateUser, requireOrgAdmin, getAllConnectors);
 
-router.get("/   ", getToken, getClaimsFromToken, validateOrgId, validateUser, requireOrgAdmin, getTemplatesByConnector);
-
-
-
-
 
 router.get("/:id", getToken, getClaimsFromToken, validateOrgId, validateUser, requireOrgAdmin, getConnectorById);
+
+
+router.get("/:id/templates",
+    getToken,
+    getClaimsFromToken,
+    validateOrgId,
+    validateUser,
+    requireOrgAdmin,
+    getTemplatesByConnector
+);
+
 router.post(
     "/",
     getToken,

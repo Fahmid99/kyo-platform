@@ -9,6 +9,10 @@ const requireOrgAdmin = require("../middlewares/requirers/requireOrgAdmin.js");
 
 const getAllTemplates = require("../controllers/template/getAllTemplates.js");
 const createTemplate = require("../controllers/template/createTemplate.js");
+const getTemplateById = require("../controllers/template/getTemplateById.js");
+const updateTemplate = require("../controllers/template/updateTemplate.js");
+const deleteTemplate = require("../controllers/template/deleteTemplate.js");
+
 
 router.get("/",
     getToken,
@@ -17,6 +21,25 @@ router.get("/",
     validateUser,
     getAllTemplates
 );
+
+
+router.get("/:id",
+    getToken,
+    getClaimsFromToken,
+    validateOrgId,
+    validateUser,
+    getTemplateById
+);
+
+router.put("/:id",
+    getToken,
+    getClaimsFromToken,
+    validateOrgId,
+    validateUser,
+    requireOrgAdmin,
+    updateTemplate
+);
+
 
 router.post("/",
     getToken,
@@ -27,6 +50,15 @@ router.post("/",
     createTemplate
 );
 
+
+router.delete("/:id",
+    getToken,
+    getClaimsFromToken,
+    validateOrgId,
+    validateUser,
+    requireOrgAdmin,
+    deleteTemplate
+);
 
 
 

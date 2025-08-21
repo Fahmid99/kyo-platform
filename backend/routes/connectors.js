@@ -10,8 +10,22 @@ const requireOrgAdmin = require("../middlewares/requirers/requireOrgAdmin.js");
 const getAllConnectors = require("../controllers/connector/getAllConnectors.js");
 const createConnector = require("../controllers/connector/createConnector.js");
 const updateConnector = require("../controllers/connector/updateConnector.js");
+const deactivateConnector = require("../controllers/connector/deactivateConnector.js");
+const reactivateConnector = require("../controllers/connector/reactivateConnector.js");
+const getConnectorById = require("../controllers/connector/getConnectorById.js");
+const getTemplatesByConnector = require("../controllers/template/getTemplatesByConnector.js");
+
+
 
 router.get("/", getToken, getClaimsFromToken, validateOrgId, validateUser, requireOrgAdmin, getAllConnectors);
+
+router.get("/   ", getToken, getClaimsFromToken, validateOrgId, validateUser, requireOrgAdmin, getTemplatesByConnector);
+
+
+
+
+
+router.get("/:id", getToken, getClaimsFromToken, validateOrgId, validateUser, requireOrgAdmin, getConnectorById);
 router.post(
     "/",
     getToken,
@@ -30,6 +44,33 @@ router.put(
     validateUser,
     requireOrgAdmin,
     updateConnector
+);
+
+router.put(
+    "/:id/deactivate",
+    getToken,
+    getClaimsFromToken,
+    validateOrgId,
+    validateUser,
+    requireOrgAdmin,
+    deactivateConnector
+);
+
+
+router.put(
+    "/:id/reactivate",
+    getToken,
+    getClaimsFromToken,
+    validateOrgId,
+    validateUser,
+    requireOrgAdmin,
+    reactivateConnector
+);
+
+router.get(
+    "/:connectorId/templates",
+    getToken,
+
 );
 
 

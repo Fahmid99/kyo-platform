@@ -15,18 +15,25 @@ const connectorSchema = new mongoose.Schema({
         ref: "User",
         required: true
     },
+    status: {
+        type: String,
+        enum: ['active', 'inactive', 'pendingDeletion'],
+        default: 'active'
+    },
+    deletionScheduledAt: {
+        type: Date,
+        default: null
+    },
     config: {
         type: mongoose.Schema.Types.Mixed,
         required: true,
         validate: {
             validator: async function (config) {
-  
-                console.log("🔍 In validator:", config);
-                console.log("this.connectorTypeId:", connectorTypeId);
-  
+
+
                 // Use the exact model name
                 const ConnectorType = mongoose.model('ConnectorType');
-                const connectorType = await ConnectorType.findById(connectorTypeId);
+                const connectorType = await ConnectorType.findById(this.connectorTypeId);
 
                 if (!connectorType) return false;
 

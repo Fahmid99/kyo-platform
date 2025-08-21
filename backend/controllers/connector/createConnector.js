@@ -1,4 +1,3 @@
-const { mongoose } = require("mongoose");
 const Connector = require("../../models/Connector.js");
 const ConnectorType = require("../../models/ConnectorType.js");
 const User = require("../../models/User.js");
